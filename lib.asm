@@ -8,11 +8,11 @@ Start:  mov di, 0B800h  ;
         mov es, di      ; es -> video segment
 
         ;-------------------------------------------------
-        mov ax, 9F3Dh   ; ax = число для вывода на экран
+        mov ax, 125d    ; ax = число для вывода на экран
         mov bh, 17h     ; bh = color attr
         mov di, 20d     ; di = начальный адрес для вывода
         ;-------------------------------------------------
-        call print_hex
+        call print_dec
 
         mov ax, 4c00h   ;
         int 21h         ; exit(0)
@@ -91,5 +91,35 @@ print_hex   proc
 print_hex   endp
 
 ;======================================================================
+; Выводит в видео память число в десятичной форме
+;======================================================================
+; Entry:    AX - number to print in video segment
+;           BH - color attr
+;           DI - start addr to print
+; Expects:  ES -> video segment
+;
+; Exit:     None
+; Destroys: AX, BL, CX, DI
+;======================================================================
+
+print_dec   proc
+
+        add di, 2 * 04h ; сдвинули адрес на позицию последней цифры
+        mov cx, 05h     ; максимальное кол-во десятичных цифр в регистре
+
+@@Next: mov bl, 10d     ; bl = 10d - делитель
+        div bl          ; ax/bl
+
+        mov bl, ah      ;
+        add bl, '0'     ; bl - цифра-символ для вывода на экран
+        mov es:[di], bx ; положили цифру в видео память
+
+        sub di, 2h      ; уменьшили адрес
+        xor ah, ah      ; теперь ah = 0, al = ax // 10
+
+        loop @@Next
+
+            ret
+print_dec   endp
 
 end Start
