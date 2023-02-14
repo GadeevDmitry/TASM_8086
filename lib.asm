@@ -12,7 +12,7 @@ Start:  mov di, 0B800h  ;
         mov bh, 17h     ; bh = color attr
         mov di, 20d     ; di = начальный адрес для вывода
         ;-------------------------------------------------
-        call print_dec
+        call print_bin
 
         mov ax, 4c00h   ;
         int 21h         ; exit(0)
@@ -31,8 +31,12 @@ Start:  mov di, 0B800h  ;
 
 print_bin   proc
 
-        add di, 2 * 0Fh ; сдвинули адрес на позицию последней цифры
+        add di, 2 * 10h ; сдвинули адрес на позицию последнего символа
         mov cx, 10h     ; кол-во двоичных цифр в регистре
+
+        mov byte ptr es:[di]  , 'b' ;
+        mov          es:[di+1], BH  ;
+        sub di, 02h                 ; положили букву 'b' - binary
 
 @@Next: mov bl, 01h     ; bl - битовая маска двоичной цифры
         and bl, al      ; bl = младшая цифра AX
@@ -40,7 +44,7 @@ print_bin   proc
         add bl, '0'     ; bl = цифра-символ для вывода на экран
         mov es:[di], bx ; положили цифру в видео память
 
-        sub di, 2h      ; уменьшили адрес
+        sub di, 02h     ; уменьшили адрес
         shr ax, 1       ; избавились от только что обработанной цифры
 
         loop @@Next
