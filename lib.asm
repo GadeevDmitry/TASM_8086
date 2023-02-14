@@ -31,14 +31,25 @@ Start:  mov di, 0B800h  ;
 
 print_bin   proc
 
-        add di, 2 * 10h ; сдвинули адрес на позицию последнего символа
+        add di, 2 * 14h ; сдвинули адрес на позицию последнего символа
         mov cx, 10h     ; кол-во двоичных цифр в регистре
 
         mov byte ptr es:[di]  , 'b' ;
         mov          es:[di+1], bh  ;
         sub di, 02h                 ; положили букву 'b' - binary
 
-@@Next: mov bl, 01h     ; bl - битовая маска двоичной цифры
+@@Next:
+;#if------------------------
+        test cx, 03h
+        jnz @@End_space
+;#true
+        mov byte ptr es:[di]  , ' ' ;
+        mov          es:[di+1], bh  ;
+        sub di, 02h                 ; кладем пробел после каждых четырех цифр
+;#endif---------------------
+@@End_space:
+
+        mov bl, 01h     ; bl - битовая маска двоичной цифры
         and bl, al      ; bl = младшая цифра AX
 
         add bl, '0'     ; bl = цифра-символ для вывода на экран
@@ -66,14 +77,25 @@ print_bin   endp
 
 print_hex   proc
 
-        add di, 2 * 04h ; сдвинули адрес на позицию последнего символа
+        add di, 2 * 06h ; сдвинули адрес на позицию последнего символа
         mov cx, 04h     ; кол-во hex-цифр в регистре
 
         mov byte ptr es:[di]  , 'h' ;
         mov          es:[di+1], bh  ;
         sub di, 02h                 ; положили букву 'h' - hex
 
-@@Next: mov bl, 0Fh     ; bl - битовая маска hex-цифры
+@@Next:
+;#if------------------------
+        test cx, 01h
+        jnz @@End_space
+;#true
+        mov byte ptr es:[di]  , ' ' ;
+        mov          es:[di+1], bh  ;
+        sub di, 02h                 ; кладем пробел после каждых двух цифр
+;#endif---------------------
+@@End_space:
+
+        mov bl, 0Fh     ; bl - битовая маска hex-цифры
         and bl, al      ; bl = младшая цифра AX
 
 ;#if------------------------
@@ -85,9 +107,9 @@ print_hex   proc
 ;#false
 @@Digit:
         add bl, '0'     ; bl = цифра-символ для вывода на экран
-
 ;#endif---------------------
 @@Print:
+
         mov es:[di], bx ; положили hex-цифру в видео память
 
         sub di, 2h      ; уменьшили адрес
@@ -112,12 +134,16 @@ print_hex   endp
 
 print_dec   proc
 
-        add di, 2 * 05h ; сдвинули адрес на позицию последнего символа
+        add di, 2 * 06h ; сдвинули адрес на позицию последнего символа
         mov cx, 05h     ; максимальное кол-во десятичных цифр в регистре
 
         mov byte ptr es:[di]  , 'd' ;
         mov          es:[di+1], bh  ;
         sub di, 02h                 ; положили букву 'd' - dec
+
+        mov byte ptr es:[di]  , ' ' ;
+        mov          es:[di+1], bh  ;
+        sub di, 02h                 ; положили пробел
 
 @@Next: mov bl, 10d     ; bl = 10d - делитель
         div bl          ; ax/bl
