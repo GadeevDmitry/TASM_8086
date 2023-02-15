@@ -132,13 +132,14 @@ print_hex   endp
 ; Expects:  ES -> video segment
 ;
 ; Exit:     None
-; Destroys: AX, BL, CX, DI
+; Destroys: AX, BL, CX, DX, SI, DI
 ;======================================================================
 
 print_dec   proc
 
         add di, 2 * 06h ; сдвинули адрес на позицию последнего символа
         mov cx, 05h     ; максимальное кол-во десятичных цифр в регистре
+        mov si, 10d     ; si = 10 - делитель
 
         mov byte ptr es:[di]  , 'd' ;
         mov          es:[di+1], bh  ;
@@ -148,15 +149,14 @@ print_dec   proc
         mov          es:[di+1], bh  ;
         sub di, 02h                 ; положили пробел
 
-@@Next: mov bl, 10d     ; bl = 10d - делитель
-        div bl          ; ax/bl
+@@Next: mov dx, 00h
+        div si          ; (dx, ax)/si <=> ax/10
 
-        mov bl, ah      ;
-        add bl, '0'     ; bl - цифра-символ для вывода на экран
-        mov es:[di], bx ; положили цифру в видео память
+        mov bl, dl      ; dx = ax mod 10 => dx < 10 => dx = dl
+        add bl, '0'     ;
+        mov es:[di], bx ;
 
-        sub di, 2h      ; уменьшили адрес
-        xor ah, ah      ; теперь ah = 0, al = ax // 10
+        sub di, 2h      ;
 
         loop @@Next
 
