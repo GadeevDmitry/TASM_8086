@@ -1,25 +1,3 @@
-.model tiny
-.code
-
-org 100h
-locals @@
-
-Start:  mov di, 0B800h  ;
-        mov es, di      ; es -> video segment
-
-        call input_dec
-        call input_dec
-
-        ;-------------------------------------------------
-        mov ax, dx      ; ax = число для вывода на экран
-        mov bh, 17h     ; bh = color attr
-        mov di, 20d     ; di = начальный адрес для вывода
-        ;-------------------------------------------------
-        call print_dec
-
-        mov ax, 4c00h   ;
-        int 21h         ; exit(0)
-
 ;======================================================================
 ; Выводит в видео память число в двоичной форме
 ;======================================================================
@@ -170,7 +148,8 @@ print_dec   endp
 ; Expects:  Decimal number input
 ;
 ; Exit:     DX - entered number
-; Destroys: AX, BX, CX
+;           AX != 0 in case of error and AX = 0 in case of no error
+; Destroys: AX, BX, CX, DX
 ;======================================================================
 
 input_dec   proc
@@ -204,7 +183,7 @@ input_dec   proc
 
 ;#if------------------------
         cmp al, 0Dh
-        je @@Exit
+        je @@Success_exit
 ;#true
         mov cx, dx
 
@@ -213,7 +192,7 @@ input_dec   proc
         int 21h         ; выводим enter в консоль
 
         mov dx, cx
-        jmp @@Exit
+        jmp @@Success_exit
 ;#endif---------------------
 
 @@Overflow:
@@ -225,12 +204,17 @@ input_dec   proc
         mov dx, offset @@Err_msg
         int 21h         ; выводим сообщение в консоль
 
-        jmp @@Exit
+        jmp @@Err_exit
 
 @@Err_msg: db 'ERROR: 16-bit register overflow', 0Ah, '$'
 
-@@Exit:     ret
+@@Err_exit:
+        mov ax, 01h
+        ret
+
+@@Success_exit:
+        mov ax, 00h
+        ret
+
+            ret
 input_dec   endp
-
-
-end Start
