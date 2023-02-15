@@ -7,8 +7,11 @@ locals @@
 Start:  mov di, 0B800h  ;
         mov es, di      ; es -> video segment
 
+        call input_dec
+        call input_dec
+
         ;-------------------------------------------------
-        mov ax, 125d    ; ax = число для вывода на экран
+        mov ax, dx      ; ax = число для вывода на экран
         mov bh, 17h     ; bh = color attr
         mov di, 20d     ; di = начальный адрес для вывода
         ;-------------------------------------------------
@@ -159,5 +162,75 @@ print_dec   proc
 
             ret
 print_dec   endp
+
+;======================================================================
+; Считывает десятичное число из консоли
+;======================================================================
+; Entry:    None
+; Expects:  Decimal number input
+;
+; Exit:     DX - entered number
+; Destroys: AX, BX, CX
+;======================================================================
+
+input_dec   proc
+
+        mov bx, 00h
+        mov dx, 00h
+        mov cx, 10d     ; cx = 10 - делитель
+
+@@Next: mov ah, 01h
+        int 21h         ; считали символ
+
+;#if------------------------
+        cmp al, '0'
+        jb @@End_input
+        cmp al, '9'
+        ja @@End_input  ; проверка считанного символа
+;#true
+        mov bl, al
+        sub bl, '0'     ; спасаем al - текущий символ
+
+        mov ax, dx      ;
+        mul cx          ;
+        jo @@Overflow   ;
+        add ax, bx      ;
+        jc @@Overflow   ; пересчитываем текущее число
+
+        mov dx, ax      ; спасаем ax
+        jmp @@Next
+;#endif---------------------
+@@End_input:
+
+;#if------------------------
+        cmp al, 0Dh
+        je @@Exit
+;#true
+        mov cx, dx
+
+        mov ah, 02h
+        mov dl, 0Ah
+        int 21h         ; выводим enter в консоль
+
+        mov dx, cx
+        jmp @@Exit
+;#endif---------------------
+
+@@Overflow:
+        mov ah, 02h
+        mov dl, 0Ah
+        int 21h         ; выводим enter в консоль
+
+        mov ah, 09h
+        mov dx, offset @@Err_msg
+        int 21h         ; выводим сообщение в консоль
+
+        jmp @@Exit
+
+@@Err_msg: db 'ERROR: 16-bit register overflow', 0Ah, '$'
+
+@@Exit:     ret
+input_dec   endp
+
 
 end Start
