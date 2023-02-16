@@ -218,3 +218,126 @@ input_dec   proc
 
             ret
 input_dec   endp
+
+;======================================================================
+; Рисует рамку в видео памяти
+;======================================================================
+; Entry:    DI - addr of upper left corner of the frame
+;           DH - height of the frame
+;           DL - length of the frame
+;           BH - color attr
+; Expects:  ES -> video segment
+;
+; Exit:     None
+; Destroys: AX, BL, CX, DL
+;======================================================================
+
+make_frame  proc
+
+lu_corner = 0C9h
+ld_corner = 0C8h
+ru_corner = 0BBh
+rd_corner = 0BCh
+l_ver     = 0CCh
+r_ver     = 0B9h
+u_hor     = 0CBh
+d_hor     = 0CAh
+
+
+shl dl, 1
+
+        mov bl, lu_corner
+        mov es:[di], bx
+
+        mov bl, ld_corner
+        mov al, 160d
+        mul dh
+        add di, ax
+        mov es:[di], bx
+
+        mov bl, rd_corner
+        mov cx, 0h          ;
+        mov cl, dl          ;
+        add di, cx          ; add di, dl
+        mov es:[di], bx
+
+        mov bl, ru_corner
+        sub di, ax
+        mov es:[di], bx
+
+        sub di, cx          ; di = изначальное di
+
+        mov bl, u_hor
+        mov al, 02h
+        add di, 02h
+        cmp al, dl
+        jb @@U_hor
+        je @@End_u_hor
+        sub di, 02h
+        jmp @@End_u_hor
+
+@@U_hor:
+        mov es:[di], bx
+
+        add al, 02h
+        add di, 02h
+        cmp al, dl
+        jb @@U_hor
+@@End_u_hor:
+
+        mov bl, r_ver
+        mov al, 01h
+        add di, 160d
+        cmp al, dh
+        jb @@R_ver
+        je @@End_r_ver
+        sub di, 160d
+        jmp @@End_r_ver
+
+@@R_ver:
+        mov es:[di], bx
+
+        inc al
+        add di, 160d
+        cmp al, dh
+        jb @@R_ver
+@@End_r_ver:
+
+        mov bl, d_hor
+        mov al, 02h
+        sub di, 02h
+        cmp al, dl
+        jb @@D_hor
+        je @@End_d_hor
+        add di, 02h
+        jmp @@End_d_hor
+
+@@D_hor:
+        mov es:[di], bx
+
+        add al, 02h
+        sub di, 02h
+        cmp al, dl
+        jb @@D_hor
+@@End_d_hor:
+
+        mov bl, l_ver
+        mov al, 01h
+        sub di, 160d
+        cmp al, dh
+        jb @@L_ver
+        je @@End_l_ver
+        add di, 160d
+        jmp @@End_l_ver
+
+@@L_ver:
+        mov es:[di], bx
+
+        inc al
+        sub di, 160d
+        cmp al, dh
+        jb @@L_ver
+@@End_l_ver:
+
+            ret
+make_frame  endp
