@@ -229,7 +229,7 @@ input_dec   endp
 ; Expects:  ES -> video segment
 ;
 ; Exit:     None
-; Destroys: AX, BL, CX, DL
+; Destroys: AX, BL, CX, DL, SI
 ;======================================================================
 
 make_frame  proc
@@ -243,8 +243,49 @@ r_ver     = 0B9h
 u_hor     = 0CBh
 d_hor     = 0CAh
 
+mov cx, dx  ; спасаем dx
 
-shl dl, 1
+mov dx, 00h     ;
+mov ax, di      ;
+mov si, 160d    ;
+div si          ; ax = di // 160 - номер строки верхнего левого угла рамки
+                ; dx = di %  160 - удвоенный номер столбца верхнего левого угла
+
+cmp ah, 0
+jne @@Frame_error_size
+
+add al, ch
+jc @@Frame_error_size
+cmp al, 23              ; 23 - высота консоли
+ja @@Frame_error_size
+
+cmp dh, 0
+jne @@Frame_error_size
+
+shl cl, 1
+add dl, cl
+jc @@Frame_error_size
+cmp dl, 157             ; 157 - длина консоли
+ja @@Frame_error_size
+jmp @@Frame_draw
+
+@@Frame_error_size:
+        mov dx, cx
+
+        mov ah, 02h
+        mov dl, 0Ah
+        int 21h     ; enter в консоль
+
+        mov ah, 09h
+        mov dx, offset @@Err_msg
+        int 21h     ; сообщение об ошибке в консоль
+        ret
+
+@@Err_msg: db 'ERROR: frame cross the console scopes', 0Ah, '$'
+
+@@Frame_draw:
+
+mov dx, cx
 
         mov bl, lu_corner
         mov es:[di], bx
