@@ -238,10 +238,10 @@ lu_corner = 0C9h
 ld_corner = 0C8h
 ru_corner = 0BBh
 rd_corner = 0BCh
-l_ver     = 0CCh
-r_ver     = 0B9h
-u_hor     = 0CBh
-d_hor     = 0CAh
+l_ver     = 0BAh
+r_ver     = 0BAh
+u_hor     = 0CDh
+d_hor     = 0CDh
 
 mov cx, dx  ; спасаем dx
 
