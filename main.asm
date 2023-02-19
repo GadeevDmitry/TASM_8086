@@ -35,49 +35,59 @@ Start:  mov si, 0B800h
 ;PRINT SUM
 ;----------------------------------------------------------------------
 
-        mov ax, si
-        add ax, bp
-        mov di, 160*3+20
+        push bx             ; color attr
+        lea  ax, [si+bp]
+        push ax             ; number to print in video segment = si+bp
+        mov  ax, 160*3 + 20
+        push ax             ; start addr to print
         call print_bin
 
-        mov ax, si
-        add ax, bp
-        mov di, 160*4+20
+        add sp, 2           ; remove start addr to print
+
+        mov  ax, 160*4 + 20
+        push ax
         call print_hex
 
-        push bp
-        push si
+        add sp, 2
+        pop cx              ; cx = si+bp: number to print in video segment
+        pop bx              ; bx = color attr
 
-        mov ax, si
-        add ax, bp
-        mov di, 160*5+20
+        push si
+        push bx
+        push cx
+        mov  ax, 160*5 + 20
+        push ax
         call print_dec
 
+        add sp, 4
+        pop bx
         pop si
-        pop bp
+
 ;----------------------------------------------------------------------
 ;PRINT SUB
 ;----------------------------------------------------------------------
-        mov ax, si
-        sub ax, bp
-        mov di, 160*3+80
+
+        push bx
+        mov  ax, si
+        sub  ax, bp
+        push ax
+        mov  ax, 160*3 + 80
+        push ax
         call print_bin
 
-        mov ax, si
-        sub ax, bp
-        mov di, 160*4+80
+        add sp, 2
+
+        mov  ax, 160*4 + 80
+        push ax
         call print_hex
 
-        push bp
-        push si
+        add sp, 2
 
-        mov ax, si
-        sub ax, bp
-        mov di, 160*5+80
+        mov  ax, 160*5 + 80
+        push ax
         call print_dec
 
-        pop si
-        pop bp
+        add sp, 6
 ;----------------------------------------------------------------------
         jmp Exit
 

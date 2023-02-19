@@ -1,16 +1,24 @@
 ;======================================================================
 ; Выводит в видео память число в двоичной форме
 ;======================================================================
-; Entry:    AX - number to print in video segment
-;           BH - color attr
-;           DI - start addr to print
+; Entry:    STACK:
+;           7 1: color attr
+;           4 2: number to print in video segment
+;           2 2: start addr to print
+;           0 2: return addr
 ; Expects:  ES -> video segment
 ;
 ; Exit:     None
-; Destroys: AX, BL, CX, DI
+; Destroys: AX, BX, CX, DI
 ;======================================================================
 
 print_bin   proc
+        push bp
+
+        mov bp, sp
+        mov di, [bp+4]
+        mov ax, [bp+6]
+        mov bh, [bp+9]
 
         add di, 2 * 14h ; сдвинули адрес на позицию последнего символа
         mov cx, 10h     ; кол-во двоичных цифр в регистре
@@ -41,22 +49,31 @@ print_bin   proc
 
         loop @@Next
 
-            ret
+        pop bp
+        ret
 print_bin   endp
 
 ;======================================================================
 ; Выводит в видео память число в Hex
 ;======================================================================
-; Entry:    AX - number to print in video segment
-;           BH - color attr
-;           DI - start addr to print
+; Entry:    STACK:
+;           7 1: color attr
+;           4 2: number to print in video segment
+;           2 2: start addr to print
+;           0 2: return addr
 ; Expects:  ES -> video segment
 ;
 ; Exit:     None
-; Destroys: AX, BL, CX, DI
+; Destroys: AX, BX, CX, DI
 ;======================================================================
 
 print_hex   proc
+        push bp
+
+        mov bp, sp
+        mov di, [bp+4]
+        mov ax, [bp+6]
+        mov bh, [bp+9]
 
         add di, 2 * 06h ; сдвинули адрес на позицию последнего символа
         mov cx, 04h     ; кол-во hex-цифр в регистре
@@ -98,22 +115,31 @@ print_hex   proc
 
         loop @@Next
 
-            ret
+        pop bp
+        ret
 print_hex   endp
 
 ;======================================================================
 ; Выводит в видео память число в десятичной форме
 ;======================================================================
-; Entry:    AX - number to print in video segment
-;           BH - color attr
-;           DI - start addr to print
+; Entry:    STACK:
+;           7 1: color attr
+;           4 2: number to print in video segment
+;           2 2: start addr to print
+;           0 2: return addr
 ; Expects:  ES -> video segment
 ;
 ; Exit:     None
-; Destroys: AX, BL, CX, DX, SI, DI
+; Destroys: AX, BX, CX, DX, SI, DI
 ;======================================================================
 
 print_dec   proc
+        push bp
+
+        mov bp, sp
+        mov di, [bp+4]
+        mov ax, [bp+6]
+        mov bh, [bp+9]
 
         add di, 2 * 06h ; сдвинули адрес на позицию последнего символа
         mov cx, 05h     ; максимальное кол-во десятичных цифр в регистре
@@ -138,7 +164,8 @@ print_dec   proc
 
         loop @@Next
 
-            ret
+        pop bp
+        ret
 print_dec   endp
 
 ;======================================================================
@@ -153,6 +180,8 @@ print_dec   endp
 ;======================================================================
 
 input_dec   proc
+        push bp
+        mov  bp, sp
 
         mov bx, 00h
         mov dx, 00h
@@ -210,13 +239,15 @@ input_dec   proc
 
 @@Err_exit:
         mov ax, 01h
+
+        pop bp
         ret
 
 @@Success_exit:
         mov ax, 00h
-        ret
 
-            ret
+        pop bp
+        ret
 input_dec   endp
 
 ;======================================================================
