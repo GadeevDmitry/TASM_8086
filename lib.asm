@@ -263,17 +263,58 @@ input_dec   endp
 ; Destroys: AX, BL, CX, DL, SI
 ;======================================================================
 
+;----------------------------------------------------------------------
+; DEFAULT FRAME PARAMETERS
+;----------------------------------------------------------------------
+
+frame_part   dw 0C903h, 0BB03h, 0BC03h, 0C803h, 0BA03h, 0BB03h, 0BA03h, 0CD03h, 2000h
+frame_offset dw 00h
+frame_length db 49h
+frame_height db 0Eh
+
 make_frame  proc
 
-lu_corner = 0C9h
-ld_corner = 0C8h
-ru_corner = 0BBh
-rd_corner = 0BCh
-l_ver     = 0BAh
-r_ver     = 0BAh
-u_hor     = 0CDh
-d_hor     = 0CDh
+;----------------------------------------------------------------------
+; FRAME_FRONTEND
+;----------------------------------------------------------------------
 
+push bp
+mov  bp, sp
+mov  si, 82h    ; адрес начала аргументов командной строки
+
+mov ax, 09h
+lea dx, @@Welcome_msg
+int 21h
+jmp @@Read_fmt
+
+@@Welcome_msg: db "Frame_builder:" 0Ah "Enter the frame's parameters input format" 0Ah '$'
+
+@@Read_fmt:
+        call getchar
+        push ax
+        call getchar
+        push ax
+        call getchar
+        push ax
+
+;----------------------------------------------------------------------
+; chars
+;----------------------------------------------------------------------
+
+        mov ax, [bp+(-2)]
+        cmp ax, 'a'
+        je @@CMD_arg_chars
+
+
+@@CMD_arg_chars:
+        mov cx, 09h
+        cld
+
+@@CMD_arg_chars_next:
+        lodsw
+
+
+;----------------------------------------------------------------------
 mov cx, dx  ; спасаем dx
 
 mov dx, 00h     ;
@@ -413,3 +454,139 @@ mov dx, cx
 
             ret
 make_frame  endp
+
+;======================================================================
+; Возвращает введенный символ
+;======================================================================
+; Entry:    None
+; Expects:  None
+;
+; Return:   AL - entered character
+; Destroys: AX, DX
+;======================================================================
+
+input_buff_size equ 80h
+input_buff       db input_buff_size, ?, input_buff_size DUP(0Dh)
+input_buff_pos   db 2
+
+;----------------------------------------------------------------------
+
+getchar     proc
+
+@@Next:
+        cmp input_buff[input_buff_pos], 0Dh
+        je  @@fill_input_buff
+
+        mov al, input_buff[input_buff_pos]
+        inc     input_buff_pos
+        mov ah, 00h
+        ret
+
+@@fill_input_buff:
+        mov ax, 0C0Ah
+        lea dx, input_buff
+        int 21h
+        mov input_buff_pos, 2
+
+        jmp @@Next
+
+        ret
+getchar     endp
+
+;======================================================================
+; Возвращает однобайтовое число, введенное в Hex формате
+;======================================================================
+; Entry:    None
+; Expects:  None
+;
+; Return:   AL - entered number
+;           CL != 0 in case of error
+; Destroys: AX, CX
+;======================================================================
+
+geth_byte   proc
+
+        call getchar
+        cmp al, '0'
+        jb  @@Not_fst_digit
+        cmp al, '9'
+        ja  @@Not_fst_digit
+
+        sub al, '0'
+        jmp @@Second_digit
+
+@@Not_fst_digit:
+        cmp al, 'A'
+        jb  @@Error
+        cmp al, 'F'
+        ja  @@Error
+
+        sub al, 'A'
+
+@@Second_digit:
+
+        mov cl, 04
+        shl al, cl
+        mov ch, al
+        xor al, al
+
+        call getchar
+        cmp al, '0'
+        jb  @@Not_sec_digit
+        cmp al, '9'
+        ja  @@Not_sec_digit
+
+        sub al, '0'
+        add al, ch
+
+        xor cl, cl  ; no-error flag
+        ret
+
+@@Not_sec_digit:
+        cmp al, 'A'
+        jb @@Error
+        cmp al, 'F'
+        ja @@Error
+
+        sub al, 'A'
+        add al, ch
+
+        xor cl, cl  ; no-error flag
+        ret
+
+@@Error:
+        mov cl, 1   ; error flag
+        ret
+
+geth_byte   endp
+
+;======================================================================
+; Возвращает двухбайтовое число, введенное в Hex формате
+;======================================================================
+; Entry:    None
+; Expects:  None
+;
+; Return:   AX - entered number
+;           CL != 0 in case of error
+; Destroys: AX, CX
+;======================================================================
+
+geth_word   proc
+
+        call geth_byte
+        cmp cl, 0
+        jne @@Error
+
+        mov ah, al
+        call geth_byte
+        cmp cl, 0
+        jne @@Error
+
+        xor cl, cl  ; error-no flag
+        ret
+
+@@Error:
+        moc cx, 1   ; error flag
+        ret
+
+geth_word   endp
