@@ -253,25 +253,23 @@ input_dec   endp
 ;======================================================================
 ; Рисует рамку в видео памяти
 ;======================================================================
-; Entry:    DI - addr of upper left corner of the frame
-;           DH - height of the frame
-;           DL - length of the frame
-;           BH - color attr
+; Entry:    None
 ; Expects:  ES -> video segment
 ;
 ; Exit:     None
-; Destroys: AX, BL, CX, DL, SI
+; Destroys: AX, BX, CX, DI
 ;======================================================================
 
 ;----------------------------------------------------------------------
 ; DEFAULT FRAME PARAMETERS
 ;----------------------------------------------------------------------
 
-frame_part   dw 0C903h, 0BB03h, 0BC03h, 0C803h, 0BA03h, 0BB03h, 0BA03h, 0CD03h, 2000h
-frame_offset dw 00h
-frame_length db 49h
-frame_height db 0Eh
-
+;-------------------0------2------4------6------8-----10-----12-----14-----16- ; _____________________________
+frame_part   dw 03C9h, 03BBh, 03BCh, 03C8h, 03BAh, 03CDh, 03BAh, 03CDh, 0020h  ; |_0|__________10__________|2_|
+frame_offset dw 00h                                                            ; |  |                      |  |
+frame_length db 49h                                                            ; |_8|          16          |12|
+frame_height db 0Eh                                                            ; |__|______________________|__|
+                                                                               ; |_6|__________14__________|4_|
 make_frame  proc
 
 ;----------------------------------------------------------------------
@@ -280,178 +278,229 @@ make_frame  proc
 
 push bp
 mov  bp, sp
-mov  si, 82h    ; адрес начала аргументов командной строки
+mov  di, 82h    ; адрес начала аргументов командной строки
 
-mov ax, 09h
+mov ah, 09h
 lea dx, @@Welcome_msg
 int 21h
 jmp @@Read_fmt
 
-@@Welcome_msg: db "Frame_builder:" 0Ah "Enter the frame's parameters input format" 0Ah '$'
+@@Welcome_msg: db "Frame_builder:", 0Ah, "Enter the frame's parameters input format", 0Ah, '$'
 
 @@Read_fmt:
         call getchar
         push ax
         call getchar
         push ax
-        call getchar
-        push ax
 
 ;----------------------------------------------------------------------
-; chars
+; parts
 ;----------------------------------------------------------------------
 
         mov ax, [bp+(-2)]
         cmp ax, 'a'
-        je @@CMD_arg_chars
+        je @@CMD_arg_parts
+        cmp ax, 'A'
+        je @@CMD_arg_parts 
 
+        cmp ax, 'c'
+        je @@Console_parts
+        cmp ax, 'C'
+        je @@Console_parts
 
-@@CMD_arg_chars:
-        mov cx, 09h
-        cld
+        jmp @@Sizes
 
-@@CMD_arg_chars_next:
-        lodsw
+@@CMD_arg_parts:
+        mov bx, 00h
+@@CMD_arg_parts_next:
+        mov ax, [di]
+        mov frame_part[bx], ax
+        add di, 2
+        add bx, 2
+        cmp bx, 18
+        jne @@CMD_arg_parts_next
 
+        jmp @@Sizes
+
+@@Console_parts:
+        mov bx, 00h
+@@Console_parts_next:
+        @@Console_parts_param_enter:
+                call geth_word
+                cmp cl, 0
+                jne @@Console_parts_param_enter
+
+        mov frame_part[bx], ax
+        inc bx
+        cmp bx, 09h
+        jne @@Console_parts_next
+
+        jmp @@Sizes
 
 ;----------------------------------------------------------------------
-mov cx, dx  ; спасаем dx
+; sizes
+;----------------------------------------------------------------------
 
-mov dx, 00h     ;
-mov ax, di      ;
-mov si, 160d    ;
-div si          ; ax = di // 160 - номер строки верхнего левого угла рамки
-                ; dx = di %  160 - удвоенный номер столбца верхнего левого угла
+@@Sizes:
+        mov ax, [bp+(-4)]
+        cmp ax, 'a'
+        je @@CMD_arg_sizes
+        cmp ax, 'A'
+        je @@CMD_arg_sizes
 
-cmp ah, 0
-jne @@Frame_error_size
+        cmp ax, 'c'
+        je @@Console_sizes
+        cmp ax, 'C'
+        je @@Console_sizes
 
-add al, ch
-jc @@Frame_error_size
-cmp al, 23              ; 23 - высота консоли
-ja @@Frame_error_size
+        jmp @@Draw
 
-cmp dh, 0
-jne @@Frame_error_size
+@@CMD_arg_sizes:
+        mov ax, [di]
+        mov frame_offset, ax
+        add di, 2
 
-shl cl, 1
-add dl, cl
-jc @@Frame_error_size
-cmp dl, 157             ; 157 - длина консоли
-ja @@Frame_error_size
-jmp @@Frame_draw
+        mov al, [di]
+        mov frame_length, al
+        inc di
 
-@@Frame_error_size:
-        mov dx, cx
+        mov al, [di]
+        mov frame_height, al
+        inc di
 
-        mov ah, 02h
-        mov dl, 0Ah
-        int 21h     ; enter в консоль
+        jmp @@Draw
 
-        mov ah, 09h
-        mov dx, offset @@Err_msg
-        int 21h     ; сообщение об ошибке в консоль
-        ret
+@@Console_sizes:
+        @@Console_offset_enter:
+                call geth_word
+                cmp cl, 0
+                jne @@Console_offset_enter
+        mov frame_offset, ax
 
-@@Err_msg: db 'ERROR: frame cross the console scopes', 0Ah, '$'
+        @@Console_length_enter:
+                call geth_byte
+                cmp cl, 0
+                jne @@Console_length_enter
+        mov frame_length, al
 
-@@Frame_draw:
+        @@Console_height_enter:
+                call geth_byte
+                cmp cl, 0
+                jne @@Console_height_enter
+        mov frame_height, al
 
-mov dx, cx
+        jmp @@Draw
 
-        mov bl, lu_corner
-        mov es:[di], bx
+;----------------------------------------------------------------------
+; FRAME_BACKEND
+;----------------------------------------------------------------------
 
-        mov bl, ld_corner
-        mov al, 160d
-        mul dh
-        add di, ax
-        mov es:[di], bx
+@@Backend_ret_pocket: pop bp
+                      ret
 
-        mov bl, rd_corner
-        mov cx, 0h          ;
-        mov cl, dl          ;
-        add di, cx          ; add di, dl
-        mov es:[di], bx
+@@Draw:
+        add sp, 4
 
-        mov bl, ru_corner
-        sub di, ax
-        mov es:[di], bx
+        cmp frame_height, 0
+        je @@Backend_ret_pocket
+        cld
 
-        sub di, cx          ; di = изначальное di
+        mov cl, frame_length
+        cmp cl, 0
+        je @@Backend_ret_pocket
 
-        mov bl, u_hor
-        mov al, 02h
-        add di, 02h
-        cmp al, dl
-        jb @@U_hor
-        je @@End_u_hor
-        sub di, 02h
-        jmp @@End_u_hor
+        mov di, frame_offset
+        mov ax, frame_part[0]
+        stosw
+        dec cl
 
-@@U_hor:
-        mov es:[di], bx
+        cmp cl, 1
+        jbe @@Draw_root_end
 
-        add al, 02h
-        add di, 02h
-        cmp al, dl
-        jb @@U_hor
-@@End_u_hor:
+        mov ax, frame_part[10]
+@@Draw_root:
+        stosw
+        dec cl
+        cmp cl, 1
+        ja @@Draw_root
+@@Draw_root_end:
 
-        mov bl, r_ver
-        mov al, 01h
+        cmp cl, 0
+        je @@Draw_middle
+        mov ax, frame_part[2]
+        stosw
+
+@@Draw_middle:
+        dec frame_height
+        cmp frame_height, 1
+        jbe @@Draw_tail
+
+@@Draw_middle_cycle:
+        mov cl, frame_length
+        mov ch, 00h
+        add cx, cx              ; cx = frame_length * 2
+        sub di, cx
+        add di, 160d            ; длина строки экрана в байтах
+
+        mov cl, frame_length
+        mov ax, frame_part[8]
+        stosw
+        dec cl
+
+        cmp cl, 1
+        jbe @@Draw_middle_inside_end
+
+        mov ax, frame_part[16]
+        @@Draw_middle_inside:
+                stosw
+                dec cl
+                cmp cl, 1
+                ja @@Draw_middle_inside
+        @@Draw_middle_inside_end:
+
+        cmp cl, 0
+        je @@Draw_middle_cycle_cond
+        mov ax, frame_part[12]
+        stosw
+
+@@Draw_middle_cycle_cond:
+        dec frame_height
+        cmp frame_height, 1
+        ja @@Draw_middle_cycle
+
+@@Draw_tail:
+        cmp frame_height, 0
+        je @@End
+
+        mov cl, frame_length
+        mov ch, 00h
+        add cx, cx              ; cx = frame_length * 2
+        sub di, cx
         add di, 160d
-        cmp al, dh
-        jb @@R_ver
-        je @@End_r_ver
-        sub di, 160d
-        jmp @@End_r_ver
 
-@@R_ver:
-        mov es:[di], bx
+        mov cl, frame_length
+        mov ax, frame_part[6]
+        stosw
+        dec cl
 
-        inc al
-        add di, 160d
-        cmp al, dh
-        jb @@R_ver
-@@End_r_ver:
+        cmp cl, 1
+        jbe @@Draw_tail_cycle_end
 
-        mov bl, d_hor
-        mov al, 02h
-        sub di, 02h
-        cmp al, dl
-        jb @@D_hor
-        je @@End_d_hor
-        add di, 02h
-        jmp @@End_d_hor
+        mov ax, frame_part[14]
+@@Draw_tail_cycle:
+        stosw
+        dec cl
+        cmp cl, 1
+        ja @@Draw_tail_cycle
+@@Draw_tail_cycle_end:
 
-@@D_hor:
-        mov es:[di], bx
+        cmp cl, 0
+        je @@End
+        mov ax, frame_part[4]
+        stosw
 
-        add al, 02h
-        sub di, 02h
-        cmp al, dl
-        jb @@D_hor
-@@End_d_hor:
-
-        mov bl, l_ver
-        mov al, 01h
-        sub di, 160d
-        cmp al, dh
-        jb @@L_ver
-        je @@End_l_ver
-        add di, 160d
-        jmp @@End_l_ver
-
-@@L_ver:
-        mov es:[di], bx
-
-        inc al
-        sub di, 160d
-        cmp al, dh
-        jb @@L_ver
-@@End_l_ver:
-
+@@End:
+            pop bp
             ret
 make_frame  endp
 
@@ -462,7 +511,7 @@ make_frame  endp
 ; Expects:  None
 ;
 ; Return:   AL - entered character
-; Destroys: AX, DX
+; Destroys: AX, BX, DX
 ;======================================================================
 
 input_buff_size equ 80h
@@ -474,10 +523,12 @@ input_buff_pos   db 2
 getchar     proc
 
 @@Next:
-        cmp input_buff[input_buff_pos], 0Dh
+        mov bl, input_buff_pos
+        mov bh, 00h
+        cmp input_buff[bx], 0Dh
         je  @@fill_input_buff
 
-        mov al, input_buff[input_buff_pos]
+        mov al, input_buff[bx]
         inc     input_buff_pos
         mov ah, 00h
         ret
@@ -517,9 +568,9 @@ geth_byte   proc
 
 @@Not_fst_digit:
         cmp al, 'A'
-        jb  @@Error
+        jb  @@Error_fst
         cmp al, 'F'
-        ja  @@Error
+        ja  @@Error_fst
 
         sub al, 'A'
 
@@ -544,9 +595,9 @@ geth_byte   proc
 
 @@Not_sec_digit:
         cmp al, 'A'
-        jb @@Error
+        jb @@Error_sec
         cmp al, 'F'
-        ja @@Error
+        ja @@Error_sec
 
         sub al, 'A'
         add al, ch
@@ -554,10 +605,19 @@ geth_byte   proc
         xor cl, cl  ; no-error flag
         ret
 
-@@Error:
+@@Error_fst:
+        call getchar
+@@Error_sec:
+        mov ax, 09h
+        mov dx, offset @@Err_msg
+        int 21h
+
         mov cl, 1   ; error flag
         ret
 
+@@Err_msg: db "Undefined hexadecimal byte number", 0Ah, '$'
+
+        ret
 geth_byte   endp
 
 ;======================================================================
@@ -582,11 +642,13 @@ geth_word   proc
         cmp cl, 0
         jne @@Error
 
+        xchg ah, al ; пользователь вводит не в "перевернутом" формате
+
         xor cl, cl  ; error-no flag
         ret
 
 @@Error:
-        moc cx, 1   ; error flag
+        mov cx, 1   ; error flag
         ret
 
 geth_word   endp

@@ -4,12 +4,10 @@
 org 100h
 locals @@
 
-Start:  mov si, 0B800h
-        mov es, si      ; es -> video segment
+Start:
+        mov bp, 0B800h
+        mov es, bp
 
-        mov di, 0h
-        mov dx, 0E49h
-        mov bh, 03h
         call make_frame
 
 ;----------------------------------------------------------------------
