@@ -314,6 +314,7 @@ jmp @@Read_fmt
         mov bx, 00h
 @@CMD_arg_parts_next:
         mov ax, [di]
+        xchg ah, al
         mov frame_part[bx], ax
         add di, 2
         add bx, 2
@@ -323,16 +324,23 @@ jmp @@Read_fmt
         jmp @@Sizes
 
 @@Console_parts:
-        mov bx, 00h
+        mov di, 00h
+        mov ah, 09h
+        lea dx, @@Console_parts_welcome_msg
+        int 21h
+
+        jmp @@Console_parts_next
+
+@@Console_parts_welcome_msg: db "Enter parts of the frames in format: <ASCCI (1 byte)><ATTR (1 byte)>", 0Ah, '$'
 @@Console_parts_next:
         @@Console_parts_param_enter:
                 call geth_word
                 cmp cl, 0
                 jne @@Console_parts_param_enter
 
-        mov frame_part[bx], ax
-        inc bx
-        cmp bx, 09h
+        mov frame_part[di], ax
+        add di, 2
+        cmp di, 12h
         jne @@Console_parts_next
 
         jmp @@Sizes
@@ -371,10 +379,19 @@ jmp @@Read_fmt
         jmp @@Draw
 
 @@Console_sizes:
+        mov ah, 09h
+        lea dx, @@Console_size_welcome_msg
+        int 21h
+
+        jmp @@Console_offset_enter
+
+@@Console_size_welcome_msg: db "Enter offset(2 bytes), length(1 byte) and height(1 byte)", 0Ah, '$'
+
         @@Console_offset_enter:
                 call geth_word
                 cmp cl, 0
                 jne @@Console_offset_enter
+        xchg ah, al
         mov frame_offset, ax
 
         @@Console_length_enter:
@@ -539,6 +556,10 @@ getchar     proc
         int 21h
         mov input_buff_pos, 2
 
+        mov ah, 02h
+        mov dl, 0Ah
+        int 21h
+
         jmp @@Next
 
         ret
@@ -552,7 +573,7 @@ getchar     endp
 ;
 ; Return:   AL - entered number
 ;           CL != 0 in case of error
-; Destroys: AX, CX
+; Destroys: AX, BX, CX, DX
 ;======================================================================
 
 geth_byte   proc
@@ -573,6 +594,7 @@ geth_byte   proc
         ja  @@Error_fst
 
         sub al, 'A'
+        add al, 10
 
 @@Second_digit:
 
@@ -600,6 +622,7 @@ geth_byte   proc
         ja @@Error_sec
 
         sub al, 'A'
+        add al, 10
         add al, ch
 
         xor cl, cl  ; no-error flag
@@ -608,7 +631,7 @@ geth_byte   proc
 @@Error_fst:
         call getchar
 @@Error_sec:
-        mov ax, 09h
+        mov ah, 09h
         mov dx, offset @@Err_msg
         int 21h
 
@@ -628,27 +651,33 @@ geth_byte   endp
 ;
 ; Return:   AX - entered number
 ;           CL != 0 in case of error
-; Destroys: AX, CX
+; Destroys: AX, BX, CX, DX
 ;======================================================================
 
 geth_word   proc
+        push bp
 
         call geth_byte
         cmp cl, 0
         jne @@Error
 
-        mov ah, al
-        call geth_byte
+        push ax         ; ______
+        call geth_byte  ;       |
+        mov bp, sp      ;       |
+        mov ah, [bp]    ;       |
+        add sp, 2       ; ah = _|
         cmp cl, 0
         jne @@Error
 
         xchg ah, al ; пользователь вводит не в "перевернутом" формате
 
         xor cl, cl  ; error-no flag
+        pop bp
         ret
 
 @@Error:
-        mov cx, 1   ; error flag
+        mov cl, 1   ; error flag
+        pop bp
         ret
 
 geth_word   endp
