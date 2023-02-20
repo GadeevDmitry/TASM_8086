@@ -681,3 +681,131 @@ geth_word   proc
         ret
 
 geth_word   endp
+
+;======================================================================
+; Возвращает длину строки
+; Длина строки должна быть не более 2^12 символов
+;======================================================================
+; Entry:    DI -  string addr
+;           AL -  string's end character
+; Expects:  ES -> string's segment
+;
+; Return:   DX -  length of the string
+; Destroys: DX, DI
+;======================================================================
+
+strlen      proc
+
+        xor dx, dx
+        cld
+@@Next:
+        scasb
+        je  @@End
+        inc dx
+
+        cmp dh, 10h
+        je  @@End
+        jmp @@Next
+@@End:
+
+        ret
+strlen      endp
+
+;======================================================================
+; Копирует CX символов из DS:[SI] в ES:[DI]
+;======================================================================
+; Entry:    SI -  addr of string to copy from
+;           DI -  addr of string to copy in
+;           CX -  number of characters to copy
+; Expects:  DS -> segment of string to copy from
+;           ES -> segment of string to copy in
+;
+; Return:   None
+; Destroys: CX
+;======================================================================
+
+memmove     proc
+
+        add si, cx
+        dec si
+        add di, cx
+        dec di
+        std
+        rep movsb
+
+        ret
+memmove     endp
+
+;======================================================================
+; Копирует строку DS:[SI] в ES:[DI]
+; Длина строки должна быть не более 2^12 символов
+;======================================================================
+; Entry:    SI -  addr of string to copy from
+;           DI -  addr of string to copy in
+;           AL -  string's end character
+; Expects:  DS -> segment of string to copy from
+;           ES -> segment of string to copy in
+;
+; Return:   None
+; Destroys:
+;======================================================================
+
+strcpy      proc
+        ret
+strcpy      endp
+
+;======================================================================
+; Размещает символ AL в первых CX позициях ES:[DI]
+;======================================================================
+; Entry:    DI -  addr of string to copy in
+;           CX -  number of characters to copy
+;           AL -  character to copy
+; Expects:  ES -> segment of string to copy in
+;
+; Return:   None
+; Destroys: CX, DI
+;======================================================================
+
+memset      proc
+
+        cld
+        rep stosb
+        ret
+memset      endp
+
+;======================================================================
+; Сравнивает первые CX символов ES:[DI] и DS:[SI]
+;======================================================================
+; Entry:    DI -  addr of the first  string to compare
+;           SI -  addr of the second string to compare
+;           CX -  number of characters to check
+; Expects:  ES -> segment of the first  string
+;           DS -> segment of the second string
+;
+; Return:   AH < 0, ds:[si] < es:[di]
+;           AH > 0, ds:[si] > es:[di]
+;           AH = 0, ds:[si] = es:[di]
+; Destroys: AX, CX, SI, DI
+;======================================================================
+
+memcmp      proc
+
+        cld
+@@Next: lodsb   ; mov al, ds:[si]
+        scasb   ; cmp al, es:[di] <=> cmp ds:[si], es:[di]
+        jb @@Neg_res
+        ja @@Pos_res
+        loop @@Next
+
+@@Neu_res:
+        mov ah, 0
+        ret
+
+@@Pos_res:
+        mov ah, 1
+        ret
+@@Neg_res:
+        mov ah, -1
+        ret
+
+memcmp      endp

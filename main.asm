@@ -4,7 +4,32 @@
 org 100h
 locals @@
 
-Start:
+Start:  lea si, l_si
+        lea di, l_di
+        mov cx, 5d
+        call memcmp
+
+        lea si, l_si
+        lea di, l_di
+
+        mov al, '$'
+        call strlen
+
+        lea si, l_si
+        lea di, l_di
+        mov cx, 0Ah
+        call memmove
+
+        lea si, l_si
+        lea di, l_di
+        mov al, '^'
+        mov cx, 0Ah
+        call memset
+
+        jmp Exit
+        l_si db "I am Dmitry Gadeev", '$'
+        l_di db "I am programming all night", '$'
+;----------------------------------------------------------------------
         mov bp, 0B800h
         mov es, bp
 
