@@ -6,14 +6,30 @@ locals @@
 
 Start:  lea si, l_si
         lea di, l_di
-        mov cx, 5d
-        call memcmp
+        mov al, '$'
+        call strcpy
+
+        lea si, l_si
+        lea di, l_di
+        mov al, '$'
+        call strlen_dssi
 
         lea si, l_si
         lea di, l_di
 
         mov al, '$'
-        call strlen
+        call strlen_esdi
+
+        lea si, l_si
+        lea di, l_di
+        mov al, '$'
+        call strcmp
+
+        lea si, l_si
+        lea di, l_di
+        mov cx, 5d
+        call memcmp
+
 
         lea si, l_si
         lea di, l_di

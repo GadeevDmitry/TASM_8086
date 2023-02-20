@@ -683,7 +683,7 @@ geth_word   proc
 geth_word   endp
 
 ;======================================================================
-; Возвращает длину строки
+; Возвращает длину строки ES:[DI]
 ; Длина строки должна быть не более 2^12 символов
 ;======================================================================
 ; Entry:    DI -  string addr
@@ -694,7 +694,7 @@ geth_word   endp
 ; Destroys: DX, DI
 ;======================================================================
 
-strlen      proc
+strlen_esdi proc
 
         xor dx, dx
         cld
@@ -709,7 +709,37 @@ strlen      proc
 @@End:
 
         ret
-strlen      endp
+strlen_esdi endp
+
+;======================================================================
+; Возвращает длину строки DS:[SI]
+; Длина строки должна быть не более 2^12 символов
+;======================================================================
+; Entry:    SI -  string addr
+;           AL -  string's end character
+; Expects:  DS -> string's segment
+;
+; Return:   DX -  length of the string
+; Destroys: DX
+;======================================================================
+
+strlen_dssi proc
+
+        push es
+        push di
+        push bx
+        mov  bx, ds
+        mov  es, bx
+        mov  di, si
+
+        call strlen_esdi
+
+        pop bx
+        pop di
+        pop es
+
+        ret
+strlen_dssi endp
 
 ;======================================================================
 ; Копирует CX символов из DS:[SI] в ES:[DI]
@@ -721,7 +751,7 @@ strlen      endp
 ;           ES -> segment of string to copy in
 ;
 ; Return:   None
-; Destroys: CX
+; Destroys: CX, SI, DI
 ;======================================================================
 
 memmove     proc
@@ -746,12 +776,75 @@ memmove     endp
 ; Expects:  DS -> segment of string to copy from
 ;           ES -> segment of string to copy in
 ;
-; Return:   None
-; Destroys:
+; Return:   AH != 0 in case of error
+; Destroys: AH, BX, CX, DX, SI, DI
 ;======================================================================
 
 strcpy      proc
+        push ax
+
+        xor ax, ax
+        mov bx, ds
+        mov al, bh
+        mov bh, bl
+        xor bl, bl
+        add bx, si
+        adc ax, 0h      ; физический адрес ds:[si] в (ax, bx)
+
+        xor cx, cx
+        mov dx, es
+        mov cl, dh
+        mov dh, dl
+        xor dl, dl
+        add dx, di
+        adc bx, 0h      ; физический адрес es:[di] в (cx, dx)
+
+        cmp ax, cx
+        ja  @@SI_more
+        jb  @@DI_more
+
+        cmp bx, dx
+        ja  @@SI_more
+        jb  @@DI_more
+        jmp @@Exit      ; адреса строк совпадают
+
+@@SI_more:
+        sub bx, dx
+        sbb ax, cx
+        mov cx, bx
+        mov bx, ax      ; разность адресов в (bx, cx)
+        jmp @@CMP_strlen
+
+@@DI_more:
+        sub dx, bx
+        sbb cx, ax
+        mov bx, cx
+        mov cx, dx      ; разность фдресов в (bx, cx)
+
+@@CMP_strlen:
+        cmp bx, 0
+        jne @@Copy
+
+        pop ax          ; al = string's end character
+        call strlen_dssi; dx = strlen_dssi
+        cmp cx, dx
+        ja  @@Copy
+        jmp @@Exit      ; строки "перекрываются"
+
+@@Copy:
+        cld
+        mov cx, dx      ; cx = strlen_dssi
+        inc cx          ; add copy of end-character into cycle
+        @@Copy_cycle:
+                movsb
+                loop @@Copy_cycle
+
+        xor ah, ah      ; error-no flag
         ret
+
+@@Exit: mov ah, 1       ; error flag
+        ret
+
 strcpy      endp
 
 ;======================================================================
@@ -774,7 +867,7 @@ memset      proc
 memset      endp
 
 ;======================================================================
-; Сравнивает первые CX символов ES:[DI] и DS:[SI]
+; Сравнивает первые CX символов DS:[SI] и ES:[DI]
 ;======================================================================
 ; Entry:    DI -  addr of the first  string to compare
 ;           SI -  addr of the second string to compare
@@ -785,20 +878,19 @@ memset      endp
 ; Return:   AH < 0, ds:[si] < es:[di]
 ;           AH > 0, ds:[si] > es:[di]
 ;           AH = 0, ds:[si] = es:[di]
-; Destroys: AX, CX, SI, DI
+; Destroys: AH, CX, SI, DI
 ;======================================================================
 
 memcmp      proc
 
         cld
-@@Next: lodsb   ; mov al, ds:[si]
-        scasb   ; cmp al, es:[di] <=> cmp ds:[si], es:[di]
+@@Next: cmpsb
         jb @@Neg_res
         ja @@Pos_res
         loop @@Next
 
 @@Neu_res:
-        mov ah, 0
+        xor ah, ah
         ret
 
 @@Pos_res:
@@ -809,3 +901,46 @@ memcmp      proc
         ret
 
 memcmp      endp
+
+;======================================================================
+; Сравнивает строки DS:[SI] и ES:[DI]
+; Длина строки должна быть не более 2^12 символов
+;======================================================================
+; Entry:    DI -  addr of the first  string to compare
+;           SI -  addr of the second string to compare
+;           AL -  string's end character
+; Expects:  ES -> segment of the first  string
+;           DS -> segment of the second string
+;
+; Return:   AH < 0, ds:[si] < es:[di]
+;           AH > 0, ds:[si] > es:[di]
+;           AH = 0, ds:[si] = es:[di]
+; Destroys: AH, CX, SI, DI
+;======================================================================
+
+strcmp          proc
+
+        xor cx, cx
+        cld
+@@Next: cmpsb
+        jb @@Neg_res
+        ja @@Pos_res
+        cmp al, ds:[si-1]
+        je @@Neu_res
+
+        inc cx
+        cmp ch, 10h
+        je  @@Neu_res
+        jmp @@Next
+
+@@Neu_res:
+        xor ah, ah
+        ret
+@@Pos_res:
+        mov ah, 1
+        ret
+@@Neg_res:
+        mov ah, -1
+        ret
+
+strcmp          endp
