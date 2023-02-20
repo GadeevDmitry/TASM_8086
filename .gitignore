@@ -1,4 +1,5 @@
 TEST/
+tst_*
 
 *.MAP
 *.OBJ
