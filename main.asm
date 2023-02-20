@@ -45,9 +45,9 @@ Start:  lea si, l_si
         jmp Exit
         l_si db "I am Dmitry Gadeev", '$'
         l_di db "I am programming all night", '$'
-;----------------------------------------------------------------------
-        mov bp, 0B800h
-        mov es, bp
+;---------------------------------------------------------------------
+;Start:  mov bp, 0B800h
+;        mov es, bp
 
         call make_frame
 
