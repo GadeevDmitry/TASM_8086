@@ -201,3 +201,41 @@ strcmp          proc
         ret
 
 strcmp          endp
+
+;======================================================================
+; Выводит сообщение в видео память
+;======================================================================
+; Entry: ES:DI -  start addr to print the message
+;        DS:SI -  addr of the string to print
+;           AH -  color attr
+;           AL -  string's end character
+;----------------------------------------------------------------------
+;           df =  0
+; Expects:  ES -> video segment
+;----------------------------------------------------------------------
+; Exit:     None
+; Destroys: AL, CX, SI, DI
+;======================================================================
+
+video_message   proc
+
+        push ax
+        push es
+        push di
+        call strlen_dssi    ; ax = strlen(ds:[si])
+        mov cx, ax
+        pop di
+        pop es
+        pop ax
+
+        cmp cx, 0
+        je @@Exit
+@@Next:
+        lodsb   ; al      = ds:[si]
+        stosw   ; es:[di] = ax (ah = attr)
+
+        loop @@Next
+
+@@Exit: ret
+
+video_message   endp

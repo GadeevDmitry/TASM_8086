@@ -45,7 +45,7 @@ frame   proc
 
         call read_mem_dec   ; bl = attr
         xchg bl, dh
-        ;-------------------; di = video mem offset, bh = h, bl = l, dh = attr
+        ;-------------------; di = video seg offset, bh = h, bl = l, dh = attr
 
         push bx             ; save bx
         call read_mem_dec   ; bl = type
@@ -54,12 +54,24 @@ frame   proc
         mul bl
         pop bx
 
+        push si             ; save si
+
         lea si, type_0
         add si, ax          ; si = type_i = type_0 + 9*i
 
         mov ah, dh          ; ah = attr
 
+        ;-------------------; di = video seg offset, si = array with frame's parts, bh = h, bl = l, ah = attr
+                            ; in stack: current addr of input data
+        push di
         call frame_draw
+        pop di
+        pop si
+        ;-------------------;
+        add di, 162d        ; di = 160 (enter) + 2(one character), чтобы перейте внутрь рамки
+        xor al, al          ; al = 0 - символ конца строки
+        call video_message
+
         ret
 
 frame   endp
@@ -172,3 +184,4 @@ frame_draw_line proc
 frame_draw_line endp
 
 include lib.asm
+include str.asm
