@@ -4,7 +4,7 @@
 ; ____ ____ ____ ____ b
 ;======================================================================
 ; Entry:    BH -  color attr
-;           AX -  number to print in video segment
+;        ES:AX -  number to print in video segment
 ;           DI -  start addr to print
 ;----------------------------------------------------------------------
 ; Expects:  ES -> video segment
@@ -51,7 +51,7 @@ print_bin   endp
 ; __ __ h
 ;======================================================================
 ; Entry:    BH -  color attr
-;           AX -  number to print in video segment
+;        ES:AX -  number to print in video segment
 ;           DI -  start addr to print
 ;----------------------------------------------------------------------
 ; Expects:  ES -> video segment
@@ -107,7 +107,7 @@ print_hex   endp
 ; _____ d
 ;======================================================================
 ; Entry:    BH -  color attr
-;           AX -  number to print in video segment
+;        ES:AX -  number to print in video segment
 ;           DI -  start addr to print
 ;----------------------------------------------------------------------
 ; Expects:  ES -> video segment
@@ -148,13 +148,12 @@ print_dec   endp
 ;======================================================================
 ; Считывает десятичное число из строки по модулю 256
 ;======================================================================
-; Entry:    SI -  start addr to read
+; Entry: DS:SI -  start addr to read
 ;----------------------------------------------------------------------
-; Expects:  DS -> string's segment
-            df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Exit:     BL - read number mod 256
-;           SI - addr after number
+;           SI - addr of the second character after end of the number
 ; Destroys: AX, BL, DL, SI
 ;======================================================================
 
@@ -164,14 +163,13 @@ read_mem_dec    proc
         mov dl, 10d
 
 @@Next: lodsb
-        cmp al, '0'
+        sub al, '0'
         jb @@Exit   ; if (al < '0') return
-        cmp al, '9'
+        cmp al, 9
         ja  @@Exit  ; if (al > '9') return
 
-        sub  al, '0'
-        xchg al, bl ; al = current number
-                    ; bl = last digit
+        xchg al, bl ; al = current number, bl = last_digit
+
         mul dl      ; ax = 10al
         add al, bl  ; al+= bl
         mov bl, al  ; bl = current number
