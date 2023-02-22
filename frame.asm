@@ -1,16 +1,20 @@
 ;======================================================================
-; Рисует рамку в видео памяти (frontend)
+; Преобразует данные для рисования рамки в видео памяти (frontend)
 ;----------------------------------------------------------------------
 ; Формат данных:
-; x y h w attr type mssg'0'
+; x y h l attr type mssg'0'
 ;
-; x, y - pos of upper left corner
-; h, w - internal height and width of the frame
+; x, y - координаты верхнего левого угла рамки
+; h, l - internal height and length of the frame
 ; attr - color attr
 ; type - frame's style
-;    0 - simple frame
-;    1 - dollar frame
-;    2 - smiles frame
+;    0 - simple
+;    1 - dollar
+;    2 - smiles
+;    3 - user's:
+;       в этом случае после 'type' должны идти:
+;       <space> <символ контура> <символа внутри> <space>
+;
 ; mssg - message to put into the frame
 ;  '0' - end-character
 ;======================================================================
@@ -20,56 +24,112 @@
 ;           ES -> video segment
 ;----------------------------------------------------------------------
 ; Exit:     None
-; Destroys: AX, BX, CX, DX, DI
+; Destroys: AX, BX, CX, DX, SI, DI
 ;======================================================================
 
 frame   proc
 
-        call read_mem_dec   ; bl = x
-        mov al, 160d        ; 160d - кол-во байт в видеопамяти для одной строки на экране
+        xor bh, bh
+        mov cl, 160d        ; 160d - кол-во байт в видеопамяти для одной строки на экране
 
-        xchg al, bl
-        mul  bl
-        mov  di, ax         ; di = 160d*x
-
-        call read_mem_dec   ; bl = y
-        mov bh, 0
-        shl bx, 1           ; 2 байта на символ в видеопамяти
-        add di, bx          ; di = 160d*x + y (смещение в видеопамяти)
-
-        call read_mem_dec   ; bl = h
-        mov bh, bl
-
-        call read_mem_dec   ; bl = l
-        mov dh, bl
-
-        call read_mem_dec   ; bl = attr
-        xchg bl, dh
-        ;-------------------; di = video seg offset, bh = h, bl = l, dh = attr
-
-        push bx             ; save bx
-        call read_mem_dec   ; bl = type
-
-        mov al, 9d          ; 9 - количество символов для задания рамки
+        call read_mem_dec   ; bx = bl = x
+        mov al, cl          ; al = 160d
         mul bl
-        pop bx
+        mov di, ax          ; di = 160d*x
 
-        push si             ; save si
+        call read_mem_dec   ; bx = bl = y
+        shl bx, 1           ; 2 байта на символ в видеопамяти
+        add di, bx          ; di = 160d*x + 2*y (смещение в видеопамяти)
 
-        lea si, type_0
-        add si, ax          ; si = type_i = type_0 + 9*i
+        call read_mem_dec
+        mov bh, bl          ; bh = h
 
-        mov ah, dh          ; ah = attr
+        call read_mem_dec
+        mov cl, bl          ; cl = l (temp save)
 
-        ;-------------------; di = video seg offset, si = array with frame's parts, bh = h, bl = l, ah = attr
-                            ; in stack: current addr of input data
+        call read_mem_dec
+        mov dh, bl          ; dh = attr
+
+        call read_mem_dec   ; bl = type
+        mov al, 9d          ; 9  - количество символов для задания рамки
+        mul bl              ; ax = 9*type
+
+        mov dl, cl          ; dl = l
+        ;-----------------------------------
+        ; ES:[DI] - смещение в видео памяти верхнего левого угла рамки
+        ; DS:[SI] - текущий адрес входных данных
+        ; AX      - адрес массива с элементами рамки относительно type_0
+        ; BL      - type
+        ; BH      - height
+        ; DH      - attr
+        ; DL      - length
+        ;-----------------------------------
+
+        cmp bl, 3
+        jne @@Def_arg       ; if (type != user's) jmp @@Def_arg
+
+@@User_arg:
+        push di
+
+        lea di, type_0
+        add di, ax
+        mov ax, ds          ;
+        mov es, ax          ; es = ds
+                            ; es:[di] - адрес массива с элементами рамки
+
+        lodsb               ; al = <символ контура>
+        mov cx, 4           ;
+        rep stosb           ; согласно формату 0-3 элементы по контуру
+        movsb               ; 4 - <символ внутри>
+        mov cx, 4           ;
+        rep stosb           ; 5-8 элементы по контуру
+
+        inc si              ; пропуск пробела
+
+        mov cx, 0B800h
+        mov es, cx          ; es -> video segment
+
+        ;-----------------------------------
+        ; SP     -> смещение в видео памяти
+        ; DS:[SI] - текущий адрес входных данных
+        ; DS:[DI] - адрес массива с элементами рамки
+        ;-----------------------------------
+
+        pop cx
+        push si
+        mov si, di
+        sub si, 9d          ; после заполнения массива с элементами рамки, di съехало на 9
+        mov di, cx
+
+        ;-----------------------------------
+        ; SP     -> текущий адрес входных данных
+        ; DS:[SI] - адрес массива с элементами рамки
+        ; ES:[DI] - смещение в видео памяти
+        ;-----------------------------------
+        jmp @@Call_draw
+
+@@Def_arg:
+        push si
+        lea  si, type_0
+        add  si, ax
+
+        ;-----------------------------------
+        ; SP     -> текущий адрес входных данных
+        ; DS:[SI] - адрес массива с элементами рамки
+        ; ES:[DI] - смещение в видео памяти
+        ;-----------------------------------
+
+@@Call_draw:
+        mov ah, dh  ; ah = color attr
+        mov bl, dl  ; bl = length
         push di
         call frame_draw
+
+@@Call_msg:
         pop di
         pop si
-        ;-------------------;
-        add di, 162d        ; di = 160 (enter) + 2(one character), чтобы перейте внутрь рамки
-        xor al, al          ; al = 0 - символ конца строки
+        xor al, al  ; al = 0 - символ конца строки
+        add di, 162d; перенос смещения внутрь рамки
         call video_message
 
         ret
@@ -77,9 +137,10 @@ frame   proc
 frame   endp
 
 ;------------0-----1-----2-----3-----4-----5-----6-----7-----8
-type_0 db 0C9h, 0CDh, 0BBh, 0BAh, 020h, 0BAh, 0C8h, 0CDh, 0BCh
-type_1 db 4 DUP(024h),            020h, 4 DUP(024h)
-type_2 db 4 DUP(001h),            020h, 4 DUP(001h)
+type_0 db 0C9h, 0CDh, 0BBh, 0BAh, 020h, 0BAh, 0C8h, 0CDh, 0BCh  ; simple
+type_1 db 4 DUP(024h),            020h, 4 DUP(024h)             ; dollar
+type_2 db 4 DUP(001h),            020h, 4 DUP(001h)             ; smiles
+type_3 db 9 DUP(?)                                              ; user's
 
 ;======================================================================
 ; Рисует рамку в видео памяти (backend)

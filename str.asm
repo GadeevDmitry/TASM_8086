@@ -205,8 +205,8 @@ strcmp          endp
 ;======================================================================
 ; Выводит сообщение в видео память
 ;======================================================================
-; Entry: ES:DI -  start addr to print the message
-;        DS:SI -  addr of the string to print
+; Entry: ES:DI -  start addr to print the message in
+;        DS:SI -  addr of the string to print from
 ;           AH -  color attr
 ;           AL -  string's end character
 ;----------------------------------------------------------------------
