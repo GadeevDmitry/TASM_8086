@@ -21,7 +21,7 @@
 ;       |_|_____________|_|
 ;       |6|______7______|8|
 ;
-; mssg - message to put into the frame
+; mssg - message to put into the frame (use '~' as a newline character)
 ;  '0' - end-character
 ;======================================================================
 ; Entry: DS:SI - addr of array with data
@@ -128,9 +128,10 @@ frame   proc
 
 @@Call_msg:
         pop di
+        add di, 162d        ; перенос смещения внутрь рамки
         pop si
-        xor al, al  ; al = 0 - символ конца строки
-        add di, 162d; перенос смещения внутрь рамки
+        xor al, al          ; al = 0 - символ конца строки
+        mov dl, newline_char; dl - символ в качестве первода строки
         call video_message
 
         ret
@@ -142,6 +143,8 @@ type_0 db 0C9h, 0CDh, 0BBh, 0BAh, 020h, 0BAh, 0C8h, 0CDh, 0BCh  ; simple
 type_1 db 4 DUP(024h),            020h, 4 DUP(024h)             ; dollar
 type_2 db 4 DUP(001h),            020h, 4 DUP(001h)             ; smiles
 type_3 db 9 DUP(?)                                              ; user's
+
+newline_char db '~'
 
 ;======================================================================
 ; Рисует рамку в видео памяти (backend)

@@ -2,11 +2,10 @@
 ; Возвращает длину строки ES:[DI]
 ; Длина строки должна быть не более 2^11 символов
 ;======================================================================
-; Entry:    DI -  string addr
+; Entry: ES:DI -  string addr
 ;           AL -  string's end character
 ;----------------------------------------------------------------------
-; Expects:  ES -> string's segment
-;           df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Return:   AX -  length of the string
 ; Destroys: AX, CX, DI
@@ -27,11 +26,10 @@ strlen_esdi endp
 ; Возвращает длину строки DS:[SI]
 ; Длина строки должна быть не более 2^12 символов
 ;======================================================================
-; Entry:    SI -  string addr
+; Entry: DS:SI -  string addr
 ;           AL -  string's end character
 ;----------------------------------------------------------------------
-; Expects:  DS -> string's segment
-;           df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Return:   AX -  length of the string
 ; Destroys: AX, BX, CX, ES, DI
@@ -51,13 +49,11 @@ strlen_dssi endp
 ;======================================================================
 ; Копирует CX символов из DS:[SI] в ES:[DI]
 ;======================================================================
-; Entry:    SI -  addr of string to copy from
-;           DI -  addr of string to copy in
+; Entry: DS:SI -  addr of string to copy from
+;        ES:DI -  addr of string to copy in
 ;           CX -  number of characters to copy
 ;----------------------------------------------------------------------
-; Expects:  DS -> segment of string to copy from
-;           ES -> segment of string to copy in
-;           df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Return:   None
 ; Destroys: CX, SI, DI
@@ -73,13 +69,11 @@ memcpy     endp
 ;======================================================================
 ; Копирует строку DS:[SI] в ES:[DI]
 ;======================================================================
-; Entry:    SI -  addr of string to copy from
-;           DI -  addr of string to copy in
+; Entry: DS:SI -  addr of string to copy from
+;        ES:DI -  addr of string to copy in
 ;           AL -  string's end character
 ;----------------------------------------------------------------------
-; Expects:  DS -> segment of string to copy from
-;           ES -> segment of string to copy in
-;           df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Return:   None
 ; Destroys: BX, CX, SI, DI
@@ -107,12 +101,11 @@ strcpy      endp
 ;======================================================================
 ; Размещает символ AL в первых CX позициях ES:[DI]
 ;======================================================================
-; Entry:    DI -  addr of string to copy in
+; Entry: ES:DI -  addr of string to copy in
 ;           CX -  number of characters to copy
 ;           AL -  character to copy
 ;----------------------------------------------------------------------
-; Expects:  ES -> segment of string to copy in
-;           df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Return:   None
 ; Destroys: CX, DI
@@ -128,13 +121,11 @@ memset      endp
 ;======================================================================
 ; Сравнивает первые CX символов DS:[SI] и ES:[DI]
 ;=====================================================================
-; Entry:    DI -  addr of the first  string to compare
-;           SI -  addr of the second string to compare
+; Entry: ES:DI -  addr of the first  string to compare
+;        DS:SI -  addr of the second string to compare
 ;           CX -  number of characters to check
 ;----------------------------------------------------------------------
-; Expects:  ES -> segment of the first  string
-;           DS -> segment of the second string
-;           df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Return:   AH < 0, ds:[si] < es:[di]
 ;           AH > 0, ds:[si] > es:[di]
@@ -165,13 +156,11 @@ memcmp      endp
 ; Сравнивает строки DS:[SI] и ES:[DI]
 ; Длина строки должна быть не более 2^12 символов
 ;======================================================================
-; Entry:    DI -  addr of the first  string to compare
-;           SI -  addr of the second string to compare
+; Entry: ES:DI -  addr of the first  string to compare
+;        DS:SI -  addr of the second string to compare
 ;           AL -  string's end character
 ;----------------------------------------------------------------------
-; Expects:  ES -> segment of the first  string
-;           DS -> segment of the second string
-;           df =  0
+; Expects:  df =  0
 ;----------------------------------------------------------------------
 ; Return:   AH < 0, ds:[si] < es:[di]
 ;           AH > 0, ds:[si] > es:[di]
@@ -208,13 +197,14 @@ strcmp          endp
 ; Entry: ES:DI -  start addr to print the message in
 ;        DS:SI -  addr of the string to print from
 ;           AH -  color attr
-;           AL -  string's end character
+;           AL -  string's end     character
+;           DL -  string's newline character
 ;----------------------------------------------------------------------
 ;           df =  0
 ; Expects:  ES -> video segment
 ;----------------------------------------------------------------------
 ; Exit:     None
-; Destroys: AL, CX, SI, DI
+; Destroys: AL, BX, CX, SI, DI
 ;======================================================================
 
 video_message   proc
@@ -228,12 +218,30 @@ video_message   proc
         pop es
         pop ax
 
+        ;===========DEBUG============
+        ;mov bh, ah
+        ;mov ax, cx
+        ;xor di, di
+        ;call print_dec
+        ;ret
+        ;============================
+
         cmp cx, 0
         je @@Exit
-@@Next:
-        lodsb   ; al      = ds:[si]
-        stosw   ; es:[di] = ax (ah = attr)
 
+        mov bx, di          ; bx = адрес текущей строки в видео памяти
+@@Next:
+        lodsb               ; al = ds:[si]
+        cmp al, dl
+        je @@Newline        ; if (al == newline_char) jmp @@Newline
+
+        stosw               ; es:[di] = ax (ah = attr)
+        loop @@Next
+        jmp  @@Exit
+
+@@Newline:
+        add bx, 160d        ; 160d - кол-во байт в видеопамяти для одной строки на экране
+        mov di, bx
         loop @@Next
 
 @@Exit: ret

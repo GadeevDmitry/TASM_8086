@@ -4,8 +4,8 @@
 ; ____ ____ ____ ____ b
 ;======================================================================
 ; Entry:    BH -  color attr
-;        ES:AX -  number to print in video segment
-;           DI -  start addr to print
+;           AX -  number to print in video segment
+;        ES:DI -  start addr to print
 ;----------------------------------------------------------------------
 ; Expects:  ES -> video segment
 ;----------------------------------------------------------------------
@@ -51,8 +51,8 @@ print_bin   endp
 ; __ __ h
 ;======================================================================
 ; Entry:    BH -  color attr
-;        ES:AX -  number to print in video segment
-;           DI -  start addr to print
+;           AX -  number to print in video segment
+;        ES:DI -  start addr to print
 ;----------------------------------------------------------------------
 ; Expects:  ES -> video segment
 ;----------------------------------------------------------------------
@@ -107,8 +107,8 @@ print_hex   endp
 ; _____ d
 ;======================================================================
 ; Entry:    BH -  color attr
-;        ES:AX -  number to print in video segment
-;           DI -  start addr to print
+;           AX -  number to print in video segment
+;        ES:DI -  start addr to print
 ;----------------------------------------------------------------------
 ; Expects:  ES -> video segment
 ;----------------------------------------------------------------------
