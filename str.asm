@@ -289,15 +289,14 @@ video_message   endp
 ;           AL -  string's end     character
 ;           BL -  vertical offset on screen to print the message in
 ;----------------------------------------------------------------------
-; Expects:  ES -> video segment
+; Expects:  screen_height equ <max number of lines on the screen>
+;           screen_length equ <max number of characters in the string>
+;           ES -> video segment
 ;           df =  0
 ;----------------------------------------------------------------------
 ; Exit:     SI -> addr after string's end character
 ; Destroys: AL, CX, SI, DI
 ;======================================================================
-
-screen_length equ 74
-screen_height equ 15
 
 video_center_oneline_message    proc
 
@@ -345,8 +344,9 @@ video_center_oneline_message    endp
 ; Expects:  df =  0
 ;           ES -> video segment
 ;----------------------------------------------------------------------
-; Exit:     None
-; Destroys: AL, BX, CX, 
+; Exit:     BL -  max length of the string in the message
+;           BH -  number of strings in the message
+; Destroys: AL, BX, CX, DX, SI, DI
 ;======================================================================
 
 center_video_message    proc

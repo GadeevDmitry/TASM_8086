@@ -1,3 +1,109 @@
+screen_length equ 74
+screen_height equ 15
+newline_char  equ '~'
+
+;======================================================================
+; Выводит текст по центру экрана и оборачивает его рамкой
+;----------------------------------------------------------------------
+; Формат данных:
+; attr type mssg'0'
+;
+; attr - color attr
+; type - frame's style
+;    0 - simple
+;    1 - dollar
+;    2 - smiles
+;    3 - user's:
+;       в этом случае после 'type' должны идти:
+;       <space> <9 символов-элементов рамки в порядке, указанном ниже> <space>
+;        _________________
+;       |0|______1______|2|
+;       | |             | |
+;       |3|      4      |5|
+;       |_|_____________|_|
+;       |6|______7______|8|
+;
+; mssg - message to put into the frame (use '~' as a newline character)
+;  '0' - end-character
+;======================================================================
+; Entry: DS:SI - addr of array with data
+;----------------------------------------------------------------------
+; Expects:  ES -> video segment
+;           df =  0
+;----------------------------------------------------------------------
+; Exit:     ES -> video segment
+; Destroys: AL, BX, CX, DX, DI, SI, ES
+;======================================================================
+
+auto_frame  proc
+
+        call read_mem_dec
+        mov dh, bl          ; dh = attr
+
+        call read_mem_dec   ; bl = type
+        mov al, 09d         ; 9 - количество символов для задания рамки
+        mul bl              ; ax = 9*type
+        lea di, type_0
+        add di, ax          ; di = type_0 + 9*type | es:[di] -> адрес начала массива с элементами рамки
+
+        cmp bl, 3
+        jne @@Build_frame   ; if (type != user's) jmp @@Def_arg
+
+@@User_arg:
+        mov ax, ds
+        mov es, ax          ; es = ds
+                            ; es:[di] - адрес массива с элементами рамки
+        mov cx, 9
+        rep movsb           ; скопировали элементы рамки из ds:[si] в es:[di]
+        inc si              ; пропуск пробела во входных данных (ds:[si] -> начало сообщения для вывода в центр экрана)
+        sub di, 9           ; после заполнения массива с элементами рамки, di съехало на 9
+
+        mov ax, 0B800h
+        mov es, ax          ; es -> video segment
+
+@@Build_frame:
+        push si
+        push di
+        mov ah, dh                  ; ah = attr
+        mov al, 0                   ; al = string's end     character
+        mov dl, '~'                 ; dl = string's newline character
+        call center_video_message   ; bl = максимальная длина строки в сообщении (длина рамки)
+                                    ; bh = кол-во строк в сообщении (высота рамки)
+        pop  si                     ; si -> адрес начала массива с элементами рамки
+
+        mov dh, ah                  ; dh = attr (save)
+        mov cl, screen_height
+        sub cl, bh
+        shr cl, 1
+        dec cl                      ; cl = (screen_height - number of strings in the message) / 2 - 1 - вертикальный отступ
+        mov al, 160d
+        mul cl
+        mov di, ax                  ; di = 160d * cl - начало строки в видеопамяти, в которую выводить сообщение
+
+        mov cl, screen_length
+        sub cl, bl
+        shr cl, 1
+        dec cl
+        shl cl, 1                   ; cl = ([(screen_length - max string's length) / 2] - 1) * 2 - горизонтальный отступ
+                                    ; * 2, так как 2 байта на символ
+        xor ch, ch                  ; cx = cl
+        add di, cx
+        mov ax, 0B800h
+        mov es, ax                  ; es:[di] -> адрес верхнего левого угла рамки в видео памяти
+
+        mov ah, dh                  ; ah = attr
+        call frame_draw
+
+        pop si                      ; si -> адрес начала сообщения
+        mov al, 0                   ; string's end     character
+        mov dl, '~'                 ; string's newline character
+        call center_video_message   ; еще раз выводим затертое рамкой сообщение
+
+        ret
+
+auto_frame  endp
+
+
 ;======================================================================
 ; Преобразует данные для рисования рамки в видео памяти (frontend)
 ;----------------------------------------------------------------------
@@ -35,15 +141,13 @@
 
 frame   proc
 
-        xor bh, bh
-        mov cl, 160d        ; 160d - кол-во байт в видеопамяти для одной строки на экране
-
         call read_mem_dec   ; bx = bl = x
-        mov al, cl          ; al = 160d
+        mov al, 160d        ; al = 160d - кол-во байт в видеопамяти для одной строки на экране
         mul bl
         mov di, ax          ; di = 160d*x
 
-        call read_mem_dec   ; bx = bl = y
+        call read_mem_dec   ; bl = y
+        xor bh, bh          ; bx = bl
         shl bx, 1           ; 2 байта на символ в видеопамяти
         add di, bx          ; di = 160d*x + 2*y (смещение в видеопамяти)
 
@@ -51,7 +155,7 @@ frame   proc
         mov bh, bl          ; bh = h
 
         call read_mem_dec
-        mov cl, bl          ; cl = l (temp save)
+        mov cl, bl          ; cl = l
 
         call read_mem_dec
         mov dh, bl          ; dh = attr
@@ -143,8 +247,6 @@ type_0 db 0C9h, 0CDh, 0BBh, 0BAh, 020h, 0BAh, 0C8h, 0CDh, 0BCh  ; simple
 type_1 db 4 DUP(024h),            020h, 4 DUP(024h)             ; dollar
 type_2 db 4 DUP(001h),            020h, 4 DUP(001h)             ; smiles
 type_3 db 9 DUP(?)                                              ; user's
-
-newline_char db '~'
 
 ;======================================================================
 ; Рисует рамку в видео памяти (backend)
