@@ -1,5 +1,5 @@
 ;======================================================================
-; Возвращает длину строки ES:[DI]
+; Возвращает длину строки ES:[DI], не включая символ конца строки
 ; Длина строки должна быть не более 2^11 символов
 ;======================================================================
 ; Entry: ES:DI -  string addr
@@ -7,7 +7,7 @@
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;----------------------------------------------------------------------
-; Return:   AX -  length of the string
+; Exit:     AX -  length of the string without string's end character
 ; Destroys: AX, CX, DI
 ;======================================================================
 
@@ -23,7 +23,7 @@ strlen_esdi proc
 strlen_esdi endp
 
 ;======================================================================
-; Возвращает длину строки DS:[SI]
+; Возвращает длину строки DS:[SI], не включая символ конца строки
 ; Длина строки должна быть не более 2^12 символов
 ;======================================================================
 ; Entry: DS:SI -  string addr
@@ -31,7 +31,7 @@ strlen_esdi endp
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;----------------------------------------------------------------------
-; Return:   AX -  length of the string
+; Exit:     AX -  length of the string without string's end character
 ; Destroys: AX, BX, CX, ES, DI
 ;======================================================================
 
@@ -55,7 +55,7 @@ strlen_dssi endp
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;----------------------------------------------------------------------
-; Return:   None
+; Exit:     None
 ; Destroys: CX, SI, DI
 ;======================================================================
 
@@ -75,7 +75,7 @@ memcpy     endp
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;----------------------------------------------------------------------
-; Return:   None
+; Exit:     None
 ; Destroys: BX, CX, SI, DI
 ;======================================================================
 
@@ -107,7 +107,7 @@ strcpy      endp
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;----------------------------------------------------------------------
-; Return:   None
+; Exit:     None
 ; Destroys: CX, DI
 ;======================================================================
 
@@ -127,7 +127,7 @@ memset      endp
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;----------------------------------------------------------------------
-; Return:   AH < 0, ds:[si] < es:[di]
+; Exit:     AH < 0, ds:[si] < es:[di]
 ;           AH > 0, ds:[si] > es:[di]
 ;           AH = 0, ds:[si] = es:[di]
 ; Destroys: AH, CX, SI, DI
@@ -162,7 +162,7 @@ memcmp      endp
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;----------------------------------------------------------------------
-; Return:   AH < 0, ds:[si] < es:[di]
+; Exit:     AH < 0, ds:[si] < es:[di]
 ;           AH > 0, ds:[si] > es:[di]
 ;           AH = 0, ds:[si] = es:[di]
 ; Destroys: AH, BX, CX, SI, DI
@@ -192,18 +192,58 @@ strcmp          proc
 strcmp          endp
 
 ;======================================================================
-; Выводит сообщение в видео память
+; Выводит однострочное сообщение в видео память
 ;======================================================================
 ; Entry: ES:DI -  start addr to print the message in
-;        DS:SI -  addr of the string to print from
+;        DS:SI -  start addr to read  the message from
+;           AH -  color attr
+;           AL -  string's end character
+;----------------------------------------------------------------------
+; Expects:  ES -> video segment
+;           df =  0
+;----------------------------------------------------------------------
+; Exit:     SI -> addr after string's end character
+; Destroys: AL, CX, SI, DI
+;======================================================================
+
+video_oneline_message   proc
+
+        push es
+        push di
+        push ax
+
+        call strlen_dssi
+        mov  cx, ax         ; cx = длина сообщения
+
+        pop ax
+        pop di
+        pop es
+
+        cmp cx, 0
+        je @@Exit           ; if (длина сообщения равна нулю) jmp @@Exit
+@@Next:
+        lodsb               ; al      = ds:[si]
+        stosw               ; es:[di] = ax (ah = attr)
+        loop @@Next
+
+@@Exit: inc si              ; skip string's end character
+        ret
+
+video_oneline_message   endp
+
+;======================================================================
+; Выводит многострочное сообщение в видео память
+;======================================================================
+; Entry: ES:DI -  start addr to print the message in
+;        DS:SI -  start addr to read  the message from
 ;           AH -  color attr
 ;           AL -  string's end     character
 ;           DL -  string's newline character
 ;----------------------------------------------------------------------
-;           df =  0
 ; Expects:  ES -> video segment
+;           df =  0
 ;----------------------------------------------------------------------
-; Exit:     None
+; Exit:     SI -> addr after string's end character
 ; Destroys: AL, BX, CX, SI, DI
 ;======================================================================
 
@@ -212,22 +252,14 @@ video_message   proc
         push ax
         push es
         push di
-        call strlen_dssi    ; ax = strlen(ds:[si])
-        mov cx, ax
+        call strlen_dssi
+        mov cx, ax          ; cx = длина сообщения
         pop di
         pop es
         pop ax
 
-        ;===========DEBUG============
-        ;mov bh, ah
-        ;mov ax, cx
-        ;xor di, di
-        ;call print_dec
-        ;ret
-        ;============================
-
         cmp cx, 0
-        je @@Exit
+        je @@Exit           ; if (длина строки равна нулю) jmp @@Exit
 
         mov bx, di          ; bx = адрес текущей строки в видео памяти
 @@Next:
@@ -244,6 +276,140 @@ video_message   proc
         mov di, bx
         loop @@Next
 
-@@Exit: ret
+@@Exit: inc si              ; skip string's end character
+        ret
 
 video_message   endp
+
+;======================================================================
+; Выводит однострочное сообщение по центру заданной строки экрана
+;======================================================================
+; Entry: DS:SI -  start addr to read the message from
+;           AH -  color attr
+;           AL -  string's end     character
+;           BL -  vertical offset on screen to print the message in
+;----------------------------------------------------------------------
+; Expects:  ES -> video segment
+;           df =  0
+;----------------------------------------------------------------------
+; Exit:     SI -> addr after string's end character
+; Destroys: AL, CX, SI, DI
+;======================================================================
+
+screen_length equ 74
+screen_height equ 15
+
+video_center_oneline_message    proc
+
+        push ax
+        push bx
+        push es
+
+        call strlen_dssi
+        mov cx, ax          ; cx = длина сообщения
+
+        pop es              ; es -> video segment
+        pop bx              ; bl =  вертикальный отступ
+        mov ax, 160d
+        mul bl
+        mov di, ax          ; di = 160d * bl - адрес начала строки на экране в видеопамяти
+        
+        mov ax, screen_length
+        sub ax, cx
+        shr ax, 1
+        shl ax, 1           ; ax = [(screen_length - message_length) / 2] * 2 - горизонтальный отступ
+        add di, ax          ; di = адрес в видео памяти начала вывода
+        pop ax              ; ah = attr, al = символ конца строки
+
+        cmp cx, 0
+        je @@Exit           ; if (пустое сообщение) jmp @@Exit
+@@Next:
+        lodsb               ; al = ds:[si]
+        stosw               ; es:[di] = ax (ah = attr)
+        loop @@Next
+
+@@Exit: inc si              ; skip string's end character
+        ret
+
+
+video_center_oneline_message    endp
+
+;======================================================================
+; Выводит многострочное сообщение в видео память по центру экрана
+;======================================================================
+; Entry: DS:SI -  start addr to read the message from
+;           AH -  color attr
+;           AL -  string's end     character
+;           DL -  string's newline character
+;----------------------------------------------------------------------
+; Expects:  df =  0
+;           ES -> video segment
+;----------------------------------------------------------------------
+; Exit:     None
+; Destroys: AL, BX, CX, 
+;======================================================================
+
+center_video_message    proc
+
+        mov di, si      ; di = start addr to read the message from (save si)
+        mov dh, al      ; dh = string's end character (save al)
+        xor bl, bl      ; bl = 0 - максимальная длина строки сообщения
+        xor bh, bh      ; bh = 0 - кол-во строк в сообщении
+        xor cl, cl      ; cl = 0 - длина текущей строки
+
+@@Next: lodsb           ; al = DS:[SI]
+        cmp al, dl
+        je  @@Str_end   ; if (символ перевода строки) jmp @@Str_end
+        cmp al, dh
+        je  @@Str_end   ; if (символ конца сообщения) jmp @@Str_end
+
+        inc cl
+        jmp @@Next
+
+@@Str_end:
+        inc bh
+        cmp cl, bl
+        ja  @@Upd_max_len   ; if (длина текущей строки > максимальная длина строки) jmp @@Upd_max_len
+        jmp @@Next_cond     ; else                                                  jmp @@Next_cond
+
+@@Upd_max_len:
+        mov bl, cl
+
+@@Next_cond:
+        xor cl, cl          ; cl = 0 - длина текущей строки
+        cmp al, dh
+        jne @@Next          ; if (не символ конца сообщения) jmp @@Next
+;----------------------------------------------------------------------
+
+        mov cl, screen_height
+        sub cl, bh
+        shr cl, 1           ; cl = (screen_height - number of string's in message) / 2 - вертикальный отступ
+
+        mov si, di          ; si = start addr to read the message from
+        push bx
+
+@@Print_str:
+        cmp bh, 1
+        jne @@Newline_last_char ; if (кол-во оставшихся строк не равно единице) jmp @@Newline_last_char
+
+@@Null_last_char:
+        mov al, dh              ; al = string's end     character (ah = attr)
+        jmp @@Call_video_center_oneline_message
+
+@@Newline_last_char:
+        mov al, dl              ; al = string's newline character (ah = attr)
+
+@@Call_video_center_oneline_message:
+        mov bl, cl              ; bl = вертикальный отступ
+        push cx
+        call video_center_oneline_message
+        pop cx
+
+        inc cl                  ; увеличиваем отступ
+        dec bh                  ; уменьшаем кол-во оставшихся строк
+        cmp bh, 0
+        jne @@Print_str         ; if (кол-во оставшихся строк в сообщении не равно нулю) jmp @@Print_str
+
+        pop bx
+        ret
+center_video_message    endp
