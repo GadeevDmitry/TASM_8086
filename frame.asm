@@ -354,5 +354,5 @@ frame_draw_line proc
 
 frame_draw_line endp
 
-include lib.asm
+include io.asm
 include str.asm
