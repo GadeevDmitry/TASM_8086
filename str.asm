@@ -207,26 +207,34 @@ strcmp          endp
 ;           df =  0
 ;----------------------------------------------------------------------
 ; Exit:     SI -> addr after string's end character
-; Destroys: AL, CX, SI, DI
+; Destroys: AL, BX, CX, DH, SI, DI
 ;======================================================================
 
 video_oneline_message   proc
 
-        push es
-        push di
+        push si
         push ax
 
-        call strlen_dssi
-        mov  cx, ax         ; cx = длина сообщения
+        call message_size
+        xor ch, ch
+        mov cl, bl          ; cx = cl = длина сообщения
 
         pop ax
-        pop di
-        pop es
+        pop si
 
         cmp cx, 0
         je @@Exit           ; if (длина сообщения равна нулю) jmp @@Exit
 @@Next:
         lodsb               ; al      = ds:[si]
+        cmp al, chg_col_char
+        jne @@Stosw         ; if (al != символ смены цвета) jmp @@Stosw
+
+@@Chg_col:
+        call read_mem_hex
+        mov ah, bl          ; ah = new_attr
+        jmp @@Next          ; смена цвета не уменьшает счетчик cx
+
+@@Stosw:
         stosw               ; es:[di] = ax (ah = attr)
         loop @@Next
 
@@ -254,12 +262,16 @@ video_oneline_message   endp
 video_message   proc
 
         push ax
-        push es
-        push di
-        call strlen_dssi
-        mov cx, ax          ; cx = длина сообщения
-        pop di
-        pop es
+        push si
+        push dx
+
+        mov dl, al          ; string's newline character = string's end character
+        call message_size
+        xor ch, ch
+        mov cl, bl          ; cx = cl = длина сообщения
+
+        pop dx
+        pop si
         pop ax
 
         cmp cx, 0
@@ -270,7 +282,17 @@ video_message   proc
         lodsb               ; al = ds:[si]
         cmp al, dl
         je @@Newline        ; if (al == newline_char) jmp @@Newline
+        cmp al, chg_col_char
+        jne @@Stosw         ; if (al != символ смены цвета) jmp @@Stosw
 
+@@Chg_col:
+        push bx
+        call read_mem_hex
+        mov ah, bl          ; ah = new_attr
+        pop bx
+        jmp @@Next          ; смена цвета не уменьшает счетчик cx
+
+@@Stosw:
         stosw               ; es:[di] = ax (ah = attr)
         loop @@Next
         jmp  @@Exit
@@ -299,20 +321,22 @@ video_message   endp
 ;           df =  0
 ;----------------------------------------------------------------------
 ; Exit:     SI -> addr after string's end character
-; Destroys: AL, CX, SI, DI
+; Destroys: AL, CX, DX, SI, DI
 ;======================================================================
 
 video_center_oneline_message    proc
 
+        mov dl, al          ; string's newline character = string's end character
         push ax
         push bx
-        push es
+        push si
 
-        call strlen_dssi
-        mov cx, ax          ; cx = длина сообщения
+        call message_size
+        xor ch, ch
+        mov cl, bl          ; cx = cl = длина строки
 
-        pop es              ; es -> video segment
-        pop bx              ; bl =  вертикальный отступ
+        pop si
+        pop bx              ; bl - вертикальный отступ
         mov ax, 160d
         mul bl
         mov di, ax          ; di = 160d * bl - адрес начала строки на экране в видеопамяти
@@ -328,6 +352,17 @@ video_center_oneline_message    proc
         je @@Exit           ; if (пустое сообщение) jmp @@Exit
 @@Next:
         lodsb               ; al = ds:[si]
+        cmp al, chg_col_char
+        jne @@Stosw         ; if (al != символ смены цвета) jmp @@Stosw
+
+@@Chg_col:
+        push bx
+        call read_mem_hex
+        mov ah, bl          ; ah = new_attr
+        pop bx
+        jmp @@Next          ; смена цвета не уменьшает счетчик cx
+
+@@Stosw:
         stosw               ; es:[di] = ax (ah = attr)
         loop @@Next
 
@@ -371,7 +406,9 @@ center_video_message    proc
         mov al, dl              ; al = string's newline character (ah = attr)
 
 @@Call_video_center_oneline_message:
+        push dx                 ; dl = string's newline character, dh = string's end character
         call video_center_oneline_message
+        pop dx
 
         inc bl                  ; увеличиваем отступ
         dec bh                  ; уменьшаем кол-во оставшихся строк
@@ -405,12 +442,21 @@ message_size    proc
         xor bh, bh      ; bh = 0 - кол-во строк в сообщении
         xor cl, cl      ; cl = 0 - длина текущей строки
 
-@@Next: lodsb           ; al = DS:[SI]
+@@Next: lodsb               ; al = DS:[SI]
         cmp al, dl
-        je  @@Str_end   ; if (символ перевода строки) jmp @@Str_end
+        je  @@Str_end       ; if (символ перевода строки) jmp @@Str_end
         cmp al, dh
-        je  @@Str_end   ; if (символ конца сообщения) jmp @@Str_end
+        je  @@Str_end       ; if (символ конца сообщения) jmp @@Str_end
+        cmp al, chg_col_char
+        jne @@Nchg_col      ; if (не символ смена цвета)  jmp @@Nchg_col
 
+@@Chg_col:
+        push bx
+        call read_mem_hex   ; skip color attr
+        pop  bx
+        jmp @@Next
+
+@@Nchg_col:
         inc cl
         jmp @@Next
 

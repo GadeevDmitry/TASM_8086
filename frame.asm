@@ -1,6 +1,7 @@
 screen_length equ 74
 screen_height equ 15
 newline_char  equ '~'
+chg_col_char  equ '#'
 
 ;======================================================================
 ; Выводит текст по центру экрана и оборачивает его рамкой (frontend)
