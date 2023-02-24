@@ -192,6 +192,10 @@ strcmp          proc
 strcmp          endp
 
 ;======================================================================
+; VIDEO SEGMENT
+;======================================================================
+
+;======================================================================
 ; Выводит однострочное сообщение в видео память
 ;======================================================================
 ; Entry: ES:DI -  start addr to print the message in
@@ -339,19 +343,63 @@ video_center_oneline_message    endp
 ; Entry: DS:SI -  start addr to read the message from
 ;           AH -  color attr
 ;           AL -  string's end     character
+;           BH -  number of strings in the message
 ;           DL -  string's newline character
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
 ;           ES -> video segment
 ;----------------------------------------------------------------------
-; Exit:     BL -  max length of the string in the message
-;           BH -  number of strings in the message
-; Destroys: AL, BX, CX, DX, SI, DI
+; Destroys: AL, BX, CX, DH, SI, DI
 ;======================================================================
 
 center_video_message    proc
 
-        mov di, si      ; di = start addr to read the message from (save si)
+        mov dh, al          ; dh = string's end character
+        mov bl, screen_height
+        sub bl, bh
+        shr bl, 1           ; bl = (screen_height - number of string's in message) / 2 - вертикальный отступ
+
+@@Print_str:
+        cmp bh, 1
+        jne @@Newline_last_char ; if (кол-во оставшихся строк не равно единице) jmp @@Newline_last_char
+
+@@Null_last_char:
+        mov al, dh              ; al = string's end     character (ah = attr)
+        jmp @@Call_video_center_oneline_message
+
+@@Newline_last_char:
+        mov al, dl              ; al = string's newline character (ah = attr)
+
+@@Call_video_center_oneline_message:
+        call video_center_oneline_message
+
+        inc bl                  ; увеличиваем отступ
+        dec bh                  ; уменьшаем кол-во оставшихся строк
+        cmp bh, 0
+        jne @@Print_str         ; if (кол-во оставшихся строк в сообщении не равно нулю) jmp @@Print_str
+
+        ret
+center_video_message    endp
+
+;======================================================================
+; Возвращает количество строк и максимальную длину строки в многострочном
+; сообщении
+;======================================================================
+; Entry: DS:SI -  start addr to read the message from
+;           AL -  string's end     character
+;           DL -  string's newline character
+;----------------------------------------------------------------------
+; Expects:  df =  0
+;----------------------------------------------------------------------
+; Exit:     BL -  max length of the string in the message
+;           BH -  number of strings in the message
+;           CL -  0
+;           DH -  string's end character
+; Destroys: AL, BX, CL, DH, SI
+;======================================================================
+
+message_size    proc
+
         mov dh, al      ; dh = string's end character (save al)
         xor bl, bl      ; bl = 0 - максимальная длина строки сообщения
         xor bh, bh      ; bh = 0 - кол-во строк в сообщении
@@ -379,37 +427,7 @@ center_video_message    proc
         xor cl, cl          ; cl = 0 - длина текущей строки
         cmp al, dh
         jne @@Next          ; if (не символ конца сообщения) jmp @@Next
-;----------------------------------------------------------------------
 
-        mov cl, screen_height
-        sub cl, bh
-        shr cl, 1           ; cl = (screen_height - number of string's in message) / 2 - вертикальный отступ
-
-        mov si, di          ; si = start addr to read the message from
-        push bx
-
-@@Print_str:
-        cmp bh, 1
-        jne @@Newline_last_char ; if (кол-во оставшихся строк не равно единице) jmp @@Newline_last_char
-
-@@Null_last_char:
-        mov al, dh              ; al = string's end     character (ah = attr)
-        jmp @@Call_video_center_oneline_message
-
-@@Newline_last_char:
-        mov al, dl              ; al = string's newline character (ah = attr)
-
-@@Call_video_center_oneline_message:
-        mov bl, cl              ; bl = вертикальный отступ
-        push cx
-        call video_center_oneline_message
-        pop cx
-
-        inc cl                  ; увеличиваем отступ
-        dec bh                  ; уменьшаем кол-во оставшихся строк
-        cmp bh, 0
-        jne @@Print_str         ; if (кол-во оставшихся строк в сообщении не равно нулю) jmp @@Print_str
-
-        pop bx
         ret
-center_video_message    endp
+
+message_size    endp

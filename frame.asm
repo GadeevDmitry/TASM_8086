@@ -32,7 +32,7 @@ newline_char  equ '~'
 ;           df =  0
 ;----------------------------------------------------------------------
 ; Exit:     ES -> video segment
-; Destroys: AL, BX, CX, DX, DI, SI, ES
+; Destroys: AL, BX, CX, DX, DI, SI
 ;======================================================================
 
 auto_frame  proc
@@ -44,7 +44,7 @@ auto_frame  proc
         mov al, 09d         ; 9 - количество символов для задания рамки
         mul bl              ; ax = 9*type
         lea di, type_0
-        add di, ax          ; di = type_0 + 9*type | es:[di] -> адрес начала массива с элементами рамки
+        add di, ax          ; di = type_0 + 9*type | es:[di] -> массив с элементами рамки
 
         cmp bl, 3
         jne @@Build_frame   ; if (type != user's) jmp @@Def_arg
@@ -56,7 +56,7 @@ auto_frame  proc
         mov cx, 9
         rep movsb           ; скопировали элементы рамки из ds:[si] в es:[di]
         inc si              ; пропуск пробела во входных данных (ds:[si] -> начало сообщения для вывода в центр экрана)
-        sub di, 9           ; после заполнения массива с элементами рамки, di съехало на 9
+        sub di, 9           ; после заполнения массива с элементами рамки, di съехало на 9 (ds:[di] -> массив с элементами рамки)
 
         mov ax, 0B800h
         mov es, ax          ; es -> video segment
@@ -64,12 +64,13 @@ auto_frame  proc
 @@Build_frame:
         push si
         push di
-        mov ah, dh                  ; ah = attr
-        mov al, 0                   ; al = string's end     character
-        mov dl, '~'                 ; dl = string's newline character
-        call center_video_message   ; bl = максимальная длина строки в сообщении (длина рамки)
-                                    ; bh = кол-во строк в сообщении (высота рамки)
-        pop  si                     ; si -> адрес начала массива с элементами рамки
+        mov ah, dh          ; ah = color attr
+        xor al, al          ; al = 0 - string's end     character
+        mov dl, newline_char; dl     - string's newline character
+
+        call message_size   ; bl = максимальная длина строки в сообщении
+                            ; bh = кол-во строк в сообщении
+        pop si              ; ds:[si] -> массив с элементами рамки
 
         mov dh, ah                  ; dh = attr (save)
         mov cl, screen_height
@@ -92,12 +93,14 @@ auto_frame  proc
         mov es, ax                  ; es:[di] -> адрес верхнего левого угла рамки в видео памяти
 
         mov ah, dh                  ; ah = attr
+        push bx
         call frame_draw
 
-        pop si                      ; si -> адрес начала сообщения
-        mov al, 0                   ; string's end     character
-        mov dl, '~'                 ; string's newline character
-        call center_video_message   ; еще раз выводим затертое рамкой сообщение
+        pop bx                      ; bh = number of strings in the message
+        pop si                      ; ds:[si] -> start addr to read the message from
+        xor al, al                  ; al = 0 - string's end     character
+        mov dl, newline_char        ; dl     - string's newline character
+        call center_video_message
 
         ret
 
