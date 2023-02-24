@@ -16,8 +16,8 @@ locals @@
 ; Формат <frame_data>:
 ; attr type mssg'0'
 ;
-; attr - color attr
-; type - frame's style
+; attr [hex] - color attr
+; type [dec] - frame's style
 ;    0 - simple
 ;    1 - dollar
 ;    2 - smiles
@@ -40,10 +40,10 @@ locals @@
 ; Формат <frame_data>:
 ; x y h l attr type mssg'0'
 ;
-; x, y - координаты верхнего левого угла рамки
-; h, l - internal height and length of the frame
-; attr - color attr
-; type - frame's style
+; x, y [dec] - координаты верхнего левого угла рамки
+; h, l [dec] - internal height and length of the frame
+; attr [hex] - color attr
+; type [dec] - frame's style
 ;    0 - simple
 ;    1 - dollar
 ;    2 - smiles

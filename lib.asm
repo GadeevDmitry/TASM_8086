@@ -179,3 +179,46 @@ read_mem_dec    proc
         ret
 
 read_mem_dec    endp
+
+;======================================================================
+; Считывает HEX-число из строки по модулю 256
+; Число должно содержать символы 0-9, A-F
+;======================================================================
+; Entry: DS:SI -  start addr to read
+;----------------------------------------------------------------------
+; Expects:  df =  0
+;----------------------------------------------------------------------
+; Exit:     BL - read number mod 256
+;           SI - addr of the second character after end of the number
+; Destroys: AL, BL, SI
+;======================================================================
+
+read_mem_hex    proc
+
+        xor bl, bl  ; bl = current_number
+
+@@Next: lodsb       ; al = ds:[si]
+        cmp al, '0'
+        jb  @@Exit  ; if (al < '0') return
+        cmp al, '9'
+        jbe @@Digit ; if (al <= '9') jmp @@Digit
+        cmp al, 'A'
+        jb  @@Exit  ; if (al < 'A') return
+        cmp al, 'F'
+        jbe @@Letter; if (al <= 'F') jmp @@Letter
+
+@@Digit:
+        sub al, '0'
+        jmp @@Culc
+
+@@Letter:
+        sub al, 'A'
+        add al, 0Ah
+
+@@Culc: shl bl, 4
+        add bl, al  ; bl = 16*bl + al
+        jmp @@Next
+
+@@Exit: ret
+
+read_mem_hex    endp

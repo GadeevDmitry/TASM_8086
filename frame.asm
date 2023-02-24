@@ -3,13 +3,13 @@ screen_height equ 15
 newline_char  equ '~'
 
 ;======================================================================
-; Выводит текст по центру экрана и оборачивает его рамкой
+; Выводит текст по центру экрана и оборачивает его рамкой (frontend)
 ;----------------------------------------------------------------------
 ; Формат данных:
 ; attr type mssg'0'
 ;
-; attr - color attr
-; type - frame's style
+; attr [hex] - color attr
+; type [dec] - frame's style
 ;    0 - simple
 ;    1 - dollar
 ;    2 - smiles
@@ -37,7 +37,7 @@ newline_char  equ '~'
 
 auto_frame  proc
 
-        call read_mem_dec
+        call read_mem_hex
         mov dh, bl          ; dh = attr
 
         call read_mem_dec   ; bl = type
@@ -113,10 +113,10 @@ auto_frame  endp
 ; Формат данных:
 ; x y h l attr type mssg'0'
 ;
-; x, y - координаты верхнего левого угла рамки
-; h, l - internal height and length of the frame
-; attr - color attr
-; type - frame's style
+; x, y [dec] - координаты верхнего левого угла рамки
+; h, l [dec] - internal height and length of the frame
+; attr [hex] - color attr
+; type [dec] - frame's style
 ;    0 - simple
 ;    1 - dollar
 ;    2 - smiles
@@ -160,7 +160,7 @@ frame   proc
         call read_mem_dec
         mov cl, bl          ; cl = l
 
-        call read_mem_dec
+        call read_mem_hex
         mov dh, bl          ; dh = attr
 
         call read_mem_dec   ; bl = type
