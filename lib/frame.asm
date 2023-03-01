@@ -45,7 +45,7 @@ auto_frame  proc
         mov al, 09d         ; 9 - количество символов для задания рамки
         mul bl              ; ax = 9*type
         lea di, type_0
-        add di, ax          ; di = type_0 + 9*type | es:[di] -> массив с элементами рамки
+        add di, ax          ; di = type_0 + 9*type | ds:[di] -> массив с элементами рамки
 
         cmp bl, 3
         jne @@Build_frame   ; if (type != user's) jmp @@Def_arg
@@ -333,7 +333,7 @@ frame_draw  endp
 ;           CL -  internal length of the line (frame)
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
-            СH =  0
+;           СH =  0
 ;           ES -> video segment
 ;----------------------------------------------------------------------
 ; Exit:     None
@@ -354,5 +354,5 @@ frame_draw_line proc
 
 frame_draw_line endp
 
-include io.asm
-include str.asm
+include ../lib/io.asm
+include ../lib/str.asm

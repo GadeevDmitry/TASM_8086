@@ -87,6 +87,6 @@ call_auto_frame:
 Exit:   mov ax, 4c00h
         int 21h
 
-include frame.asm
+include ../lib/frame.asm
 
 end Start
