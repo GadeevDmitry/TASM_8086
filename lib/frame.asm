@@ -89,9 +89,7 @@ auto_frame  proc
         shl cl, 1                   ; cl = ([(screen_length - max string's length) / 2] - 1) * 2 - горизонтальный отступ
                                     ; * 2, так как 2 байта на символ
         xor ch, ch                  ; cx = cl
-        add di, cx
-        mov ax, 0B800h
-        mov es, ax                  ; es:[di] -> адрес верхнего левого угла рамки в видео памяти
+        add di, cx                  ; es:[di] -> адрес верхнего левого угла рамки в видео памяти
 
         mov ah, dh                  ; ah = attr
         push bx
@@ -109,7 +107,7 @@ auto_frame  endp
 
 
 ;======================================================================
-; Преобразует данные для рисования рамки в видео памяти (frontend)
+; Преобразует данные для рисования рамки (в видеопамяти или другом сегменте) (frontend)
 ;----------------------------------------------------------------------
 ; Формат данных:
 ; x y h l attr type mssg'0'
@@ -134,10 +132,10 @@ auto_frame  endp
 ; mssg - message to put into the frame (use '~' as a newline character)
 ;  '0' - end-character
 ;======================================================================
-; Entry: DS:SI - addr of array with data
+; Entry: DS:SI -  addr of array with data
+;           ES -> frame segment
 ;----------------------------------------------------------------------
 ; Expects:  df =  0
-;           ES -> video segment
 ;----------------------------------------------------------------------
 ; Exit:     None
 ; Destroys: AX, BX, CX, DX, SI, DI
@@ -153,7 +151,7 @@ frame   proc
         call read_mem_dec   ; bl = y
         xor bh, bh          ; bx = bl
         shl bx, 1           ; 2 байта на символ в видеопамяти
-        add di, bx          ; di = 160d*x + 2*y (смещение в видеопамяти)
+        add di, bx          ; di = 160d*x + 2*y (смещение верхнего левого угла рамки)
 
         call read_mem_dec
         mov bh, bl          ; bh = h
@@ -170,7 +168,7 @@ frame   proc
 
         mov dl, cl          ; dl = l
         ;-----------------------------------
-        ; ES:[DI] - смещение в видео памяти верхнего левого угла рамки
+        ; ES:[DI] - адрес верхнего левого угла рамки
         ; DS:[SI] - текущий адрес входных данных
         ; AX      - адрес массива с элементами рамки относительно type_0
         ; BL      - type
@@ -183,10 +181,12 @@ frame   proc
         jne @@Def_arg       ; if (type != user's) jmp @@Def_arg
 
 @@User_arg:
-        push di
+        push di             ; save di - смещение верхнего левого угла рамки
 
         lea di, type_0
         add di, ax
+
+        push es             ; save es
         mov ax, ds          ;
         mov es, ax          ; es = ds
                             ; es:[di] - адрес массива с элементами рамки
@@ -195,8 +195,7 @@ frame   proc
         rep movsb           ; скопировали элементы рамки из ds:[si] в es:[di]
         inc si              ; пропуск пробела
 
-        mov cx, 0B800h
-        mov es, cx          ; es -> video segment
+        pop es              ; es -> сегмент рамки
 
         ;-----------------------------------
         ; SP     -> смещение в видео памяти
