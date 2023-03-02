@@ -62,7 +62,7 @@ New_09h proc
         iret
 
 @@Frame_key:
-        test is_frame_on, 0FFh
+        test cs:is_frame_on, 0FFh
         jnz  @@Hide_frame       ;   if (is_frame_on != 0) jmp @@Hide_frame
                                 ;   else                      @@Show_frame
 @@Show_frame:
