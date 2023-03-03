@@ -17,11 +17,10 @@ old_08h_addr    dd ?
 
 frame_status    db 0h               ;   frame switched (on: 1)/(off: 0)
 
-buff_image      dw BUFF_SIZE DUP(?)
-buff_saved      dw BUFF_SIZE DUP(?)
+buff_image      dw 2*BUFF_SIZE DUP(?)
+buff_saved      dw 2*BUFF_SIZE DUP(?)
 
 show_frame_data db "0 0 13 72 03 0 ", 0h
-hide_frame_data db "0 0 13 72 00 0 ", 0h
 ;                   _ - вертикальный отступ
 ;                     _ - горизонтальный отступ
 ;                       __ - высота рамки
@@ -114,7 +113,9 @@ upd_buff macro
         mov es, ax          ;   es =  cs
         lea di, buff_image  ;es:di -> buff_image
 
+        mov cx, BUFF_SIZE
         call upd_buffer
+
         endm
 
 ;======================================================================
@@ -184,7 +185,7 @@ New_09h proc
 @@Show_frame:
         save_all_reg
 
-        copy_buff 0B800h 0 cs <offset buff_saved>    ;   video --cp--> buff_sved
+        copy_buff 0B800h 0 cs <offset buff_saved>    ;   video --cp--> buff_saved
         ;-------seg_from
         ;---------ofs_from
         ;--------------seg_to
@@ -363,6 +364,7 @@ draw_one_reg    endp
 
 upd_buffer  proc
 
+        cld
 @@Next: lodsw
         cmp ax, es:[di]
         jne @@Upd_value     ;   if (ds:[si] != es:[di]) jmp @@Upd_value
