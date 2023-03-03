@@ -107,11 +107,11 @@ upd_buff macro
         mov ax, 0B800h
         mov ds, ax          ;   ds -> video segment
         xor si, si          ;   si -> video offset
-        lea bx, buff_saved  ;ds:bx -> buff_saved
 
         mov ax, cs
         mov es, ax          ;   es =  cs
         lea di, buff_image  ;es:di -> buff_image
+        lea bx, buff_saved  ;es:bx -> buff_saved
 
         mov cx, BUFF_SIZE
         call upd_buffer
@@ -151,6 +151,7 @@ draw_frame_reg macro frm_data_seg, frm_data_ofs, draw_seg, reg_clr_attr, reg_ofs
 ;======================================================================
 
 New_09h proc
+        cld
         push ax
         in   al, 60h            ;   al = scan_code нажатой клавиши
 
@@ -353,7 +354,7 @@ draw_one_reg    endp
 ;======================================================================
 ; Entry: DS:SI - start addr of buffer_1
 ;        ES:DI - strat addr of buffer_2
-;        DS:BX - start addr of buffer_3
+;        ES:BX - start addr of buffer_3
 ;           CX - size of buffers (in words)
 ;----------------------------------------------------------------------
 ; Expects:  CX > 0
@@ -364,14 +365,13 @@ draw_one_reg    endp
 
 upd_buffer  proc
 
-        cld
 @@Next: lodsw
         cmp ax, es:[di]
         jne @@Upd_value     ;   if (ds:[si] != es:[di]) jmp @@Upd_value
         jmp @@Next_cond     ;   else                    jmp @@Next_cond
 
 @@Upd_value:
-        mov ds:[bx], ax
+        mov es:[bx], ax
 
 @@Next_cond:
         inc di
@@ -385,7 +385,9 @@ upd_buffer  proc
 upd_buffer  endp
 
 include ../lib/frame.asm
+
 Program_end:
+
 ;======================================================================
 
 Main:   xor bx, bx                      ;   bx = 0
