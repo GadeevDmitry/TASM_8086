@@ -4,10 +4,12 @@
 org 100h
 locals @@
 
-buff_size   equ 0Ah
+;------------------------
+buff_size   equ 20d
 enter_ascii equ 13d
+;------------------------
 
-Start:	mov ah, 09h
+Start:	mov ah, 09h					;	Dos Fn 09h "display text"
 		lea dx,	password_welcm_msg
 		int 21h						;	приветствие
 
@@ -15,29 +17,31 @@ Start:	mov ah, 09h
 		mov es, di					;	es = ds
 		lea di, password_buff		;	es:di -> password_buff
 
-		mov ah, 01h					;	DOS Fn 01h
+		xor cx, cx					;	cx = 0 - кол-во введенных символов
+		mov ah, 01h					;	DOS Fn 01h "kybd input"
 		cld
 Input_char:
 		int 21h						;	al = введенный символ
 		cmp al, enter_ascii
-		je  Input_end				;	if (al == enter_ascii) jmp Password_cmp
+		je  Input_end				;	if (al == enter_ascii) jmp Input_end
 
 		stosb						;	es:[di] = al, di++
+		inc cx						;	кол-во введенных символов += 1
 		jmp Input_char
 
 Input_end:
-		stosb						;	es:[di] = enter_ascii, di++
 		lea di, password_buff		;	es:di  -> password_buff
 		lea si, password_correct	;	ds:si  -> password_correct
+
+		cmp cx, buff_size
+		jb  Wrong_password			;	if (cx < buff_size) jmp Wrong_password
 
 Password_cmp:
 		lodsb						;	al = очередной символ password_correct
 		scasb						;	   (es:[di] == al) ? zf = 0 : zf != 0
 		jne Wrong_password			;	if (es:[di] != al) jmp Wrong_password
 
-		cmp al, enter_ascii
-		je  Right_password			;	if (al == enter_ascii) jmp Right_password
-		jmp Password_cmp			;	else				   jmp Password_cmp
+		loop Password_cmp
 
 Right_password:
 		mov ah, 09h
@@ -58,11 +62,11 @@ Exit:	mov ax, 4C00h
 
 ;----------------------------------------------------------------------
 password_buff 	 	db buff_size DUP(?)
-password_correct 	db "aboba", enter_ascii
+password_correct 	db "F$@sdq!-_8,9k7s~?f.u"
 
-password_welcm_msg	db "Enter your password!", 				   0Ah, '$'
-password_right_msg  db "Correct password! Access is allowed!", 0Ah, '$'
-password_wrong_msg	db "Wrong password! Access denied!", 	   0Ah, '$'
+password_welcm_msg  db "Hi bro, you have to enter the password! Just formality, you understand, I think",	0Ah, '$'
+password_wrong_msg	db "Oh, no, bro! You forgot the password?",												0Ah, '$'
+password_right_msg	db "That's all! And you were afraid)", 													0Ah, '$'
 ;----------------------------------------------------------------------
 
 end Start
