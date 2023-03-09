@@ -29,7 +29,18 @@ Input_char:
 		inc cx						;	кол-во введенных символов += 1
 		jmp Input_char
 
-Input_end:
+Input_end: jmp Start_cmp
+
+;----------------------------------------------------------------------
+password_buff 	 	db buff_size DUP(?)			;	20d bytes
+password_correct 	db "F$@sdq!-_8,9k7s~?f.u"	;	20d bytes
+
+password_welcm_msg  db "Hi bro, you have to enter the password! Just formality, you understand, I think",	0Ah, '$'	;	81d bytes
+password_wrong_msg	db "Oh, no, bro! You forgot the password?",												0Ah, '$'	;	39d bytes
+password_right_msg	db "That's all! And you were afraid)", 													0Ah, '$'	;	34d bytes
+;----------------------------------------------------------------------
+
+Start_cmp:
 		lea di, password_buff		;	es:di  -> password_buff
 		lea si, password_correct	;	ds:si  -> password_correct
 
@@ -59,14 +70,5 @@ Wrong_password:
 
 Exit:	mov ax, 4C00h
 		int 21h
-
-;----------------------------------------------------------------------
-password_buff 	 	db buff_size DUP(?)
-password_correct 	db "F$@sdq!-_8,9k7s~?f.u"
-
-password_welcm_msg  db "Hi bro, you have to enter the password! Just formality, you understand, I think",	0Ah, '$'
-password_wrong_msg	db "Oh, no, bro! You forgot the password?",												0Ah, '$'
-password_right_msg	db "That's all! And you were afraid)", 													0Ah, '$'
-;----------------------------------------------------------------------
 
 end Start
