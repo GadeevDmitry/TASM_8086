@@ -1,6 +1,9 @@
 TEST/
 tst_*
 
+*.html
+crack
+
 *.MAP
 *.OBJ
 *.COM
