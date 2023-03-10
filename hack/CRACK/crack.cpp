@@ -64,7 +64,7 @@ struct crack_video
 #define $hero_right crack->hero_is_right_look
 
 //================================================================================================================================
-// FUNCTION DECLARATION
+// crack_video: FUNCTION DECLARATION
 //================================================================================================================================
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -82,11 +82,14 @@ bool crack_video_hero_init      (crack_video *const crack);
 // event
 //--------------------------------------------------------------------------------------------------------------------------------
 
+void crack_video_event_space    (crack_video *const crack, sf::RenderWindow *const wnd, buffer *const bin_code, const char *const out_file);
+void set_cracking_mode          (crack_video *const crack, sf::RenderWindow *const wnd);
+
 void crack_video_event_left     (crack_video *const crack);
 void crack_video_event_right    (crack_video *const crack);
 
 //================================================================================================================================
-// FUNCTION BODY
+// crack_video: FUNCTION BODY
 //================================================================================================================================
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -193,6 +196,62 @@ bool crack_video_hero_init(crack_video *const crack)
 // event
 //--------------------------------------------------------------------------------------------------------------------------------
 
+void crack_video_event_space(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const bin_code, const char *const out_file)
+{
+    log_assert(crack != nullptr);
+    log_assert(wnd   != nullptr);
+
+    log_assert(bin_code           != nullptr);
+    log_assert(bin_code->buff_beg != nullptr);
+    log_assert(bin_code->buff_pos != nullptr);
+
+    log_assert(out_file != nullptr);
+
+    static bool is_cracked_alredy = false;
+    if (is_cracked_alredy) return;
+
+    set_cracking_mode(crack, wnd);
+
+    FILE *const out_stream = fopen(out_file, "w");
+    if (out_stream == nullptr)
+    {
+        is_cracked_alredy = true;
+        $message.setString("Error!(check console)");
+
+        fprintf(stderr, "Can't write in \"%s\"\n", out_file);
+        return;
+    }
+
+    bin_code->buff_beg[19] = 0xEB;
+    bin_code->buff_beg[20] = 0x4D;
+    bin_code->buff_beg[21] = 0x90;
+
+    fwrite(bin_code->buff_beg, sizeof(char), bin_code->buff_size, out_stream);
+    fclose(out_stream);
+
+    is_cracked_alredy = true;
+    $message.setString("Cracking finished!");
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+void set_cracking_mode(crack_video *const crack, sf::RenderWindow *const wnd)
+{
+    log_assert(crack != nullptr);
+    log_assert(wnd   != nullptr);
+
+    $message.setString("Cracking...");
+
+    (*wnd).clear  ();
+    (*wnd).draw   ($back_spr);
+    (*wnd).draw   ($hero_spr);
+    (*wnd).draw   ($message);
+    (*wnd).display();
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+
 void crack_video_event_left(crack_video *const crack)
 {
     log_verify(crack != nullptr, ;);
@@ -205,6 +264,9 @@ void crack_video_event_left(crack_video *const crack)
 
     $hero_spr.move(-20, 0);
 }
+
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
 
 void crack_video_event_right(crack_video *const crack)
 {
@@ -220,11 +282,29 @@ void crack_video_event_right(crack_video *const crack)
 }
 
 //================================================================================================================================
+// FUNCTION DECLARATION
+//================================================================================================================================
+
+//--------------------------------------------------------------------------------------------------------------------------------
+// verify
+//--------------------------------------------------------------------------------------------------------------------------------
+
+const unsigned long long CORRECT_HASH_VAL  = 0xFFFFFFFFFFFFFD1D;
+const size_t             CORRECT_FILE_SIZE = 236;
+
+bool get_file_to_crack   (buffer *const bin_code, const int argc, const char *argv[]);
+bool is_correct_file_hash(buffer *const bin_code);
+
+
+//================================================================================================================================
 // MAIN
 //================================================================================================================================
 
-int main()
+int main(const int argc, const char *argv[])
 {
+    buffer bin_code = {};
+    if (!get_file_to_crack(&bin_code, argc, argv)) return 0;
+
     sf::RenderWindow main_wnd(sf::VideoMode(WND_WIDTH, WND_HEIGHT), "CRACK");
 
     crack_video crack = {};
@@ -235,16 +315,18 @@ int main()
         sf::Event event;
         while (main_wnd.pollEvent(event))
         {
-            if (event.type == sf::Event::Closed    ) { main_wnd.close(); return 0; }
+            if (event.type == sf::Event::Closed    ) { main_wnd.close(); buffer_dtor(&bin_code); return 0; }
             if (event.type == sf::Event::KeyPressed)
             {
                 switch(event.key.code)
                 {
-                    case sf::Keyboard::A:   crack_video_event_left (&crack);
-                                            break;
-                    case sf::Keyboard::D:   crack_video_event_right(&crack);
-                                            break;
-                    default:                break;
+                    case sf::Keyboard::Space:   crack_video_event_space(&crack, &main_wnd, &bin_code, argv[1]);
+                                                break;
+                    case sf::Keyboard::A:       crack_video_event_left (&crack);
+                                                break;
+                    case sf::Keyboard::D:       crack_video_event_right(&crack);
+                                                break;
+                    default:                    break;
                 }
             }
 
@@ -255,4 +337,55 @@ int main()
             main_wnd.display();
         }
     }
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+// verify
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool get_file_to_crack(buffer *const bin_code, const int argc, const char *argv[])
+{
+    log_verify(bin_code != nullptr, false);
+    log_verify(argv     != nullptr, false);
+
+    log_verify(argc > 0, false);
+
+    if (argc != 2)
+    {
+        fprintf(stderr, "You should give one parameter: file to crack\n");
+        return false;
+    }
+
+    if (!buffer_ctor_file(bin_code, argv[1])) return false;
+
+    if (!is_correct_file_hash(bin_code))
+    {
+        fprintf(stderr, "Invalid hash: you gave wrong file or file is damaged\n");
+
+        buffer_dtor(bin_code);
+        return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool is_correct_file_hash(buffer *const bin_code)
+{
+    log_assert(bin_code           != nullptr);
+    log_assert(bin_code->buff_beg != nullptr);
+    log_assert(bin_code->buff_beg == bin_code->buff_pos);
+
+    if (bin_code->buff_size != CORRECT_FILE_SIZE) return false;
+
+    unsigned long long hash_val = 0ll;
+
+    for (; *bin_code->buff_pos; ++bin_code->buff_pos)
+    {
+        hash_val = ((1 << 5) - 1) * hash_val + (*bin_code->buff_pos);
+    }
+
+    bin_code->buff_pos = bin_code->buff_beg;
+    return hash_val == CORRECT_HASH_VAL;
 }
