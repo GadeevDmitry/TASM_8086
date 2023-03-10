@@ -6,7 +6,7 @@ ALG = ../lib_cpp/algorithm/algorithm
 LIB_H = $(LOG).h $(ALG).h
 LIB_O = $(LOG).o $(ALG).o
 #-----------------------------------------
-SFML = -lsfml-graphics -lsfml-window -lsfml-system
+SFML = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 
 crack: crack.cpp $(LIB_H)
 	g++ $(CFLAGS) $(SFML) $< $(LIB_O) -o $@

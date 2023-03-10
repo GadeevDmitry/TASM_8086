@@ -8,10 +8,13 @@
 #include "../lib_cpp/algorithm/algorithm.h"
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 //================================================================================================================================
 // CONST
 //================================================================================================================================
+
+const char     MUSIC_FILE[] = "8_bit_music.ogg";
 
 const char     BACKGROUND_FILE [] = "8_bit_game.jpg";
 const unsigned BACKGROUND_WIDTH   = 626;                // ширина фона в пикселях
@@ -30,6 +33,8 @@ const unsigned WND_HEIGHT =  600;
 
 struct crack_video
 {
+    sf::Music   sound_track;
+
     sf::Texture back_texture;
     sf::Sprite  back_sprite;
 
@@ -42,6 +47,8 @@ struct crack_video
 // DSL
 //--------------------------------------------------------------------------------------------------------------------------------
 
+#define $sound      crack->sound_track
+
 #define $back_tex   crack->back_texture
 #define $back_spr   crack->back_sprite
 
@@ -53,12 +60,26 @@ struct crack_video
 // FUNCTION DECLARATION
 //================================================================================================================================
 
+//--------------------------------------------------------------------------------------------------------------------------------
+// init
+//--------------------------------------------------------------------------------------------------------------------------------
+
 bool crack_video_init           (crack_video *const crack, sf::RenderWindow *const wnd);
+
+bool crack_video_music_init     (crack_video *const crack);
 bool crack_video_background_init(crack_video *const crack);
 bool crack_video_hero_init      (crack_video *const crack);
 
+//--------------------------------------------------------------------------------------------------------------------------------
+// event
+//--------------------------------------------------------------------------------------------------------------------------------
+
 void crack_video_event_left     (crack_video *const crack);
 void crack_video_event_right    (crack_video *const crack);
+
+//================================================================================================================================
+// FUNCTION BODY
+//================================================================================================================================
 
 //--------------------------------------------------------------------------------------------------------------------------------
 // init
@@ -68,18 +89,33 @@ bool crack_video_init(crack_video *const crack, sf::RenderWindow *const wnd)
 {
     log_verify(crack != nullptr, false);
 
+    if (!crack_video_music_init     (crack)) return false;
     if (!crack_video_background_init(crack)) return false;
     if (!crack_video_hero_init      (crack)) return false;
 
+    $sound.play();
+
     (*wnd).draw   ($back_spr);
     (*wnd).draw   ($hero_spr);
-
     (*wnd).display();
 
     return true;
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
+
+bool crack_video_music_init(crack_video *const crack)
+{
+    log_assert(crack != nullptr);
+
+    if (!$sound.openFromFile(MUSIC_FILE))
+    {
+        log_error("can't open \"%s\"\n", MUSIC_FILE);
+        return false;
+    }
+
+    return true;
+}
 
 bool crack_video_background_init(crack_video *const crack)
 {
@@ -155,7 +191,7 @@ int main()
     sf::RenderWindow main_wnd(sf::VideoMode(WND_WIDTH, WND_HEIGHT), "CRACK");
 
     crack_video crack = {};
-    crack_video_init(&crack, &main_wnd);
+    if (!crack_video_init(&crack, &main_wnd)) { main_wnd.close(); return 0; }
 
     while (main_wnd.isOpen())
     {
