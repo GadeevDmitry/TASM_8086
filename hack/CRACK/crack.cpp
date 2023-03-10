@@ -4,8 +4,8 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "../lib_cpp/logs/log.h"
-#include "../lib_cpp/algorithm/algorithm.h"
+#include "../../lib_cpp/logs/log.h"
+#include "../../lib_cpp/algorithm/algorithm.h"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
@@ -15,6 +15,7 @@
 //================================================================================================================================
 
 const char     MUSIC_FILE[] = "8_bit_music.ogg";
+const char      FONT_FILE[] = "8_bit_font.ttf";
 
 const char     BACKGROUND_FILE [] = "8_bit_game.jpg";
 const unsigned BACKGROUND_WIDTH   = 626;                // ширина фона в пикселях
@@ -34,6 +35,9 @@ const unsigned WND_HEIGHT =  600;
 struct crack_video
 {
     sf::Music   sound_track;
+ 
+    sf::Font    font;
+    sf::Text    message;
 
     sf::Texture back_texture;
     sf::Sprite  back_sprite;
@@ -48,6 +52,9 @@ struct crack_video
 //--------------------------------------------------------------------------------------------------------------------------------
 
 #define $sound      crack->sound_track
+
+#define $font       crack->font
+#define $message    crack->message
 
 #define $back_tex   crack->back_texture
 #define $back_spr   crack->back_sprite
@@ -67,6 +74,7 @@ struct crack_video
 bool crack_video_init           (crack_video *const crack, sf::RenderWindow *const wnd);
 
 bool crack_video_music_init     (crack_video *const crack);
+bool crack_video_text_init      (crack_video *const crack);
 bool crack_video_background_init(crack_video *const crack);
 bool crack_video_hero_init      (crack_video *const crack);
 
@@ -90,6 +98,7 @@ bool crack_video_init(crack_video *const crack, sf::RenderWindow *const wnd)
     log_verify(crack != nullptr, false);
 
     if (!crack_video_music_init     (crack)) return false;
+    if (!crack_video_text_init      (crack)) return false;
     if (!crack_video_background_init(crack)) return false;
     if (!crack_video_hero_init      (crack)) return false;
 
@@ -97,11 +106,13 @@ bool crack_video_init(crack_video *const crack, sf::RenderWindow *const wnd)
 
     (*wnd).draw   ($back_spr);
     (*wnd).draw   ($hero_spr);
+    (*wnd).draw   ($message);
     (*wnd).display();
 
     return true;
 }
 
+//--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 
 bool crack_video_music_init(crack_video *const crack)
@@ -116,6 +127,30 @@ bool crack_video_music_init(crack_video *const crack)
 
     return true;
 }
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool crack_video_text_init(crack_video *const crack)
+{
+    log_assert(crack != nullptr);
+
+    if (!$font.loadFromFile(FONT_FILE))
+    {
+        log_error("can't open \"%s\"\n", FONT_FILE);
+        return false;
+    }
+
+    $message.setFont         ($font);
+    $message.setString       ("Press space to crack");
+    $message.setCharacterSize(50);
+
+    $message.setFillColor(sf::Color::White);
+    $message.setPosition (350, 20);
+
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
 
 bool crack_video_background_init(crack_video *const crack)
 {
@@ -132,6 +167,8 @@ bool crack_video_background_init(crack_video *const crack)
 
     return true;
 }
+
+//--------------------------------------------------------------------------------------------------------------------------------
 
 bool crack_video_hero_init(crack_video *const crack)
 {
@@ -214,6 +251,7 @@ int main()
             main_wnd.clear  ();
             main_wnd.draw   (crack.back_sprite);
             main_wnd.draw   (crack.hero_sprite);
+            main_wnd.draw   (crack.message);
             main_wnd.display();
         }
     }
