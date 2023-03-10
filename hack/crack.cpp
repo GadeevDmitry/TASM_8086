@@ -18,7 +18,7 @@ const unsigned BACKGROUND_WIDTH   = 626;                // ширина фона
 const unsigned BACKGROUND_HEIGHT  = 289;                // высота фона в пикселях
 
 const char     HERO_FILE [] = "mario.png";
-const unsigned HERO_WIDTH   = 672;                      // ширина героя в пикселях
+const unsigned HERO_WIDTH   =  672;                     // ширина героя в пикселях
 const unsigned HERO_HEIGHT  = 1176;                     // высота героя в пикселях
 
 const unsigned WND_WIDTH  = 1000;
@@ -35,6 +35,7 @@ struct crack_video
 
     sf::Texture hero_texture;
     sf::Sprite  hero_sprite;
+    bool        hero_is_right_look;
 };
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -46,6 +47,7 @@ struct crack_video
 
 #define $hero_tex   crack->hero_texture
 #define $hero_spr   crack->hero_sprite
+#define $hero_right crack->hero_is_right_look
 
 //================================================================================================================================
 // FUNCTION DECLARATION
@@ -57,8 +59,6 @@ bool crack_video_hero_init      (crack_video *const crack);
 
 void crack_video_event_left     (crack_video *const crack);
 void crack_video_event_right    (crack_video *const crack);
-void crack_video_event_up       (crack_video *const crack);
-void crack_video_event_down     (crack_video *const crack);
 
 //--------------------------------------------------------------------------------------------------------------------------------
 // init
@@ -107,8 +107,11 @@ bool crack_video_hero_init(crack_video *const crack)
         return false;
     }
 
-    $hero_spr.setTexture($hero_tex, true);
-    $hero_spr.setScale  (40.0 / HERO_WIDTH, 70.0 / HERO_HEIGHT);
+    $hero_spr.setTexture ($hero_tex, true);
+    $hero_spr.setScale   (80.0 / HERO_WIDTH, 140.0 / HERO_HEIGHT);
+    $hero_spr.setPosition(0                ,  WND_HEIGHT - 140.0);
+
+    $hero_right = true;
 
     return true;
 }
@@ -121,6 +124,12 @@ void crack_video_event_left(crack_video *const crack)
 {
     log_verify(crack != nullptr, ;);
 
+    if ($hero_right)
+    {
+        $hero_spr.scale(-1.0, 1.0);
+        $hero_right = false;
+    }
+
     $hero_spr.move(-20, 0);
 }
 
@@ -128,21 +137,13 @@ void crack_video_event_right(crack_video *const crack)
 {
     log_verify(crack != nullptr, ;);
 
+    if (!$hero_right)
+    {
+        $hero_spr.scale(-1.0, 1.0);
+        $hero_right = true;
+    }
+
     $hero_spr.move(20, 0);
-}
-
-void crack_video_event_up(crack_video *const crack)
-{
-    log_verify(crack != nullptr, ;);
-
-    $hero_spr.move(0, 20);
-}
-
-void crack_video_event_down(crack_video *const crack)
-{
-    log_verify(crack != nullptr, ;);
-
-    $hero_spr.move(0, -20);
 }
 
 //================================================================================================================================
@@ -161,6 +162,7 @@ int main()
         sf::Event event;
         while (main_wnd.pollEvent(event))
         {
+            if (event.type == sf::Event::Closed    ) { main_wnd.close(); return 0; }
             if (event.type == sf::Event::KeyPressed)
             {
                 switch(event.key.code)
@@ -169,14 +171,14 @@ int main()
                                             break;
                     case sf::Keyboard::D:   crack_video_event_right(&crack);
                                             break;
-                    case sf::Keyboard::W:   crack_video_event_up   (&crack);
-                                            break;
-                    case sf::Keyboard::S:   crack_video_event_down (&crack);
-                                            break;
                     default:                break;
                 }
             }
-            else if (event.type == sf::Event::Closed) { main_wnd.close(); return 0; }
+
+            main_wnd.clear  ();
+            main_wnd.draw   (crack.back_sprite);
+            main_wnd.draw   (crack.hero_sprite);
+            main_wnd.display();
         }
     }
 }
