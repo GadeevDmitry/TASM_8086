@@ -4,8 +4,8 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "../../lib_cpp/logs/log.h"
-#include "../../lib_cpp/algorithm/algorithm.h"
+#include "../../../lib_cpp/logs/log.h"
+#include "../../../lib_cpp/algorithm/algorithm.h"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
@@ -14,16 +14,10 @@
 // CONST
 //================================================================================================================================
 
-const char     MUSIC_FILE[] = "8_bit_music.ogg";
-const char      FONT_FILE[] = "8_bit_font.ttf";
-
-const char     BACKGROUND_FILE [] = "8_bit_game.jpg";
-const unsigned BACKGROUND_WIDTH   = 626;                // ширина фона в пикселях
-const unsigned BACKGROUND_HEIGHT  = 289;                // высота фона в пикселях
-
-const char     HERO_FILE [] = "mario.png";
-const unsigned HERO_WIDTH   =  672;                     // ширина героя в пикселях
-const unsigned HERO_HEIGHT  = 1176;                     // высота героя в пикселях
+const char      MUSIC_FILE[] = "../data/8_bit_music.ogg";
+const char       FONT_FILE[] = "../data/8_bit_font.ttf";
+const char BACKGROUND_FILE[] = "../data/8_bit_game.jpg";
+const char       HERO_FILE[] = "../data/mario.png";
 
 const unsigned WND_WIDTH  = 1000;
 const unsigned WND_HEIGHT =  600;
@@ -165,8 +159,10 @@ bool crack_video_background_init(crack_video *const crack)
         return false;
     }
 
+    sf::Vector2u tex_sizes = $back_tex.getSize();
+
     $back_spr.setTexture($back_tex, true);
-    $back_spr.setScale  ((float) WND_WIDTH / (float) BACKGROUND_WIDTH, (float) WND_HEIGHT / (float) BACKGROUND_HEIGHT);
+    $back_spr.setScale  ((float) WND_WIDTH / (float) tex_sizes.x, (float) WND_HEIGHT / (float) tex_sizes.y);
 
     return true;
 }
@@ -183,9 +179,11 @@ bool crack_video_hero_init(crack_video *const crack)
         return false;
     }
 
+    sf::Vector2u tex_sizes = $hero_tex.getSize();
+
     $hero_spr.setTexture ($hero_tex, true);
-    $hero_spr.setScale   (80.0 / HERO_WIDTH, 140.0 / HERO_HEIGHT);
-    $hero_spr.setPosition(0                ,  WND_HEIGHT - 140.0);
+    $hero_spr.setScale   (80.0 / (float) tex_sizes.x, 140.0 / tex_sizes.y);
+    $hero_spr.setPosition(0                         ,  WND_HEIGHT - 140.0);
 
     $hero_right = true;
 
