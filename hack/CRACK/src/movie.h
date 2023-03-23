@@ -16,7 +16,9 @@ const char *FILE_FONT     = "../data/8_bit_font.ttf" ;
 const char *FILE_GAME     = "../data/8_bit_game.jpg" ;
 const char *FILE_MARIO    = "../data/mario.png";
 
-const double g = 9.8;    // ускорение свободного падения
+const double          g =  9.8; // ускорение свободного падения
+const double USER_SPEED =  5.0; // скорость движения по горизонтали
+const double USER_JUMP  = 10.0; // скорость сразу после прыжка
 
 //================================================================================================================================
 // physiscs
@@ -85,6 +87,10 @@ bool mario_world_ctor               (mario_world *const mario_life);
 bool mario_world_simple_move        (mario_world *const mario_life, sf::Sprite *const mario_sprite);
 bool mario_world_reculc_acceleration(mario_world *const mario_life);
 
+bool mario_world_go_left (mario_world *const mario_life);
+bool mario_world_go_right(mario_world *const mario_life);
+bool mario_world_jump    (mario_world *const mario_life);
+bool mario_world_stop    (mario_world *const mario_life);
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
@@ -98,6 +104,8 @@ struct mario_handler
 #define $mario_tex  (mario_handler_exemplar).mario_tex
 #define $mario_spr  (mario_handler_exemplar).mario_spr
 #define $mario_life (mario_handler_exemplar).mario_life
+
+bool mario_handler_ctor(mario_handler *const mario);
 
 //================================================================================================================================
 // render_text

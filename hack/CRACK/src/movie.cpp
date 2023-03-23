@@ -118,6 +118,42 @@ bool mario_world_reculc_acceleration(mario_world *const mario_life)
     return true;
 }
 
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool mario_world_go_left(mario_world *const mario_life)
+{
+    log_verify(mario_life != nullptr, false);
+
+    $vx = (-1) * USER_SPEED;
+    return true;
+}
+
+bool mario_world_go_right(mario_world *const mario_life)
+{
+    log_verify(mario_life != nullptr, false);
+
+    $vx = USER_SPEED;
+    return true;
+}
+
+bool mario_world_jump(mario_world *const mario_life)
+{
+    log_verify(mario_life != nullptr, false);
+
+    if ((int) $y + (int) $y_size >= $y_max) $vy = (-1) * USER_JUMP;
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool mario_world_stop(mario_world *const mario_life)
+{
+    log_verify(mario_life != nullptr, false);
+
+    $vx = 0;
+    return true;
+}
+
 //================================================================================================================================
 // mario_handler
 //================================================================================================================================
@@ -128,5 +164,22 @@ bool mario_world_reculc_acceleration(mario_world *const mario_life)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
+bool mario_handler_ctor(mario_handler *const mario)
+{
+    log_verify(mario != nullptr, false);
 
+    if (!$mario_tex.loadFromFile(FILE_MARIO))
+    {
+        log_error("Can't load mario from file \"%s\"\n", FILE_MARIO);
+        return false;
+    }
 
+    sf::Vector2u mario_initial_size = $mario_tex.getSize();
+
+    $mario_spr.setTexture($mario_tex, true);
+    $mario_spr.setScale  (MARIO_X_SIZE / (double) mario_initial_size.x, MARIO_Y_SIZE / (double) mario_initial_size.y);
+
+    return mario_world_ctor(&$mario_life);
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
