@@ -131,3 +131,36 @@ bool mario_simple_move(mario_handler *const mario)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
+bool mario_go_left(mario_handler *const mario, const double mario_speed)
+{
+    log_verify(mario != nullptr, false);
+
+    $mario_kin.vx = (-1.0) * mario_speed;
+    return true;
+}
+
+bool mario_go_right(mario_handler *const mario, const double mario_speed)
+{
+    log_verify(mario != nullptr, false);
+
+    $mario_kin.vx = mario_speed;
+    return true;
+}
+
+bool mario_jump(mario_handler *const mario, const double mario_speed)
+{
+    log_verify(mario != nullptr, false);
+
+    if ((int) $mario_kin.y + (int) $mario_kin.y_size >= $mario_kin.y_max) $mario_kin.vy = (-1.0) * mario_speed;
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool mario_stop(mario_handler *const mario)
+{
+    log_verify(mario != nullptr, false);
+
+    $mario_kin.vx = 0;
+    return true;
+}
