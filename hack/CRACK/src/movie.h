@@ -91,5 +91,72 @@ bool mario_ctor(mario_handler *const mario,
                                                 const double   ax0 = 0.0, const double   ay0 = 0.0);
 
 bool mario_simple_move(mario_handler *const mario);
+bool mario_go_left    (mario_handler *const mario, const double mario_speed);
+bool mario_go_right   (mario_handler *const mario, const double mario_speed);
+bool mario_jump       (mario_handler *const mario, const double mario_speed);
+bool mario_stop       (mario_handler *const mario);
+
+//================================================================================================================================
+// render_text
+//================================================================================================================================
+
+struct render_text
+{
+    sf::Font font;
+    sf::Text text;
+};
+
+#define $font txt->font
+#define $text txt->text
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool render_text_ctor(render_text *const txt, const char *const font_file,
+                                              const char *const message,
+
+                                              const double x_pos,
+                                              const double y_pos);
+
+bool render_text_upd_message(render_text *const txt, const char *const message);
+
+//================================================================================================================================
+// render_back
+//================================================================================================================================
+
+struct render_back
+{
+    sf::Texture back_texture;
+    sf::Sprite  back_sprite;
+};
+
+#define $back_tex   back->back_texture
+#define $back_spr   back->back_sprite
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool render_back_ctor(render_back *const back, const char *const back_file,
+
+                                               const double x_size,
+                                               const double y_size);
+
+//================================================================================================================================
+// crack_video
+//================================================================================================================================
+
+struct crack_video
+{
+    sf::Music   music;
+
+    render_text   text;
+    render_back   back;
+    mario_handler hero;
+};
+
+#define $sound      crack->sound_track
+#define $hero       crack->hero
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+
 
 #endif //MOVIE_H

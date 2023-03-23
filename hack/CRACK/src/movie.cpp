@@ -164,3 +164,66 @@ bool mario_stop(mario_handler *const mario)
     $mario_kin.vx = 0;
     return true;
 }
+
+//================================================================================================================================
+// render_text
+//================================================================================================================================
+
+bool render_text_ctor(render_text *const txt, const char *const font_file,
+                                              const char *const message,
+
+                                              const double x_pos,
+                                              const double y_pos)
+{
+    log_verify(txt       != nullptr, false);
+    log_verify(font_file != nullptr, false);
+    log_verify(message   != nullptr, false);
+
+    if (!$font.loadFromFile(font_file))
+    {
+        log_error("Can't load font from file \"%s\"\n", font_file);
+        return false;
+    }
+
+    $text.setFont         ($font);
+    $text.setString       (message);
+    $text.setCharacterSize(50);
+    $text.setColor        (sf::Color::White);
+    $text.setPosition     (x_pos, y_pos);
+
+    return true;
+}
+
+bool render_text_upd_message(render_text *const txt, const char *const message)
+{
+    log_verify(txt     != nullptr, false);
+    log_verify(message != nullptr, false);
+
+    $text.setString(message);
+}
+
+//================================================================================================================================
+// render_back
+//================================================================================================================================
+
+bool render_back_ctor(render_back *const back, const char *const back_file,
+
+                                               const double x_size,
+                                               const double y_size)
+{
+    log_verify(back      != nullptr, false);
+    log_verify(back_file != nullptr, false);
+
+    if (!$back_tex.loadFromFile(back_file))
+    {
+        log_error("Can't load background from file \"%s\"\n", back_file);
+        return false;
+    }
+
+    sf::Vector2u size0 = $back_tex.getSize();
+
+    $back_spr.setTexture($back_tex, true);
+    $back_spr.setScale  (x_size / (double) size0.x, y_size / (double) size0.y);
+
+    return true;
+}
