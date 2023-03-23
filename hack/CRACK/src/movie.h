@@ -5,6 +5,17 @@
 // CONST
 //================================================================================================================================
 
+const int      WND_X_SIZE =  1000;
+const int      WND_Y_SIZE =   600;
+
+const double MARIO_X_SIZE =  80.0;
+const double MARIO_Y_SIZE = 140.0;
+
+const char *FILE_MUSIC    = "../data/8_bit_music.ogg";
+const char *FILE_FONT     = "../data/8_bit_font.ttf" ;
+const char *FILE_GAME     = "../data/8_bit_game.jpg" ;
+const char *FILE_MARIO    = "../data/mario.png";
+
 const double g = 9.8;    // ускорение свободного падения
 
 //================================================================================================================================
@@ -19,44 +30,31 @@ struct physics
 
     double x_size;
     double y_size;
-
-    int x_min, x_max;
-    int y_max;
 };
 
-#define  $x     body-> x
-#define $vx     body->vx
-#define $ax     body->ax
+#define $x      (physics_body). x
+#define $vx     (physics_body).vx
+#define $ax     (physics_body).ax
 
-#define  $y     body-> y
-#define $vy     body->vy
-#define $ay     body->ay
+#define $y      (physics_body). y
+#define $vy     (physics_body).vy
+#define $ay     (physics_body).ay
 
-#define $x_size body->x_size
-#define $y_size body->y_size
+#define $x_size (physics_body).x_size
+#define $y_size (physics_body).y_size
 
-#define $x_min  body->x_min
-#define $x_max  body->x_max
-#define $y_max  body->y_max
+bool physics_ctor       (physics *const body, const double x_size,
+                                              const double y_size,  const double  x = 0, const double  y = 0,
+                                                                    const double vx = 0, const double vy = 0,
+                                                                    const double ax = 0, const double ay = 0);
 
-//--------------------------------------------------------------------------------------------------------------------------------
-
-bool physics_ctor(physics *const body,  const double  x0, const double  y0,
-                                        const double vx0, const double vy0,
-                                        const double ax0, const double ay0,
-
-                                        const double x_size,
-                                        const double y_size,
-
-                                        const int x_min,
-                                        const int x_max,
-                                        const int y_max);
-
-bool physics_simple_move (physics *const body, sf::Sprite *const body_spr);
-bool physics_reculc_accel(physics *const body);
+bool physics_set_param  (physics *const body,                       const double  x = 0, const double  y = 0,
+                                                                    const double vx = 0, const double vy = 0,
+                                                                    const double ax = 0, const double ay = 0);
+bool physics_simple_move(physics *const body);
 
 //================================================================================================================================
-// mario_handler
+// mario
 //================================================================================================================================
 
 enum MOVE_DIRECTION
@@ -65,36 +63,41 @@ enum MOVE_DIRECTION
     MOVE_RIGHT  ,
 };
 
-struct mario_handler
+//--------------------------------------------------------------------------------------------------------------------------------
+
+struct mario_world
 {
-    sf::Texture     mario_tex;
-    sf::Sprite      mario_spr;
-    physics         mario_kinematic;
-    MOVE_DIRECTION  mario_direction;
+    int x_min, x_max;
+    int y_max;
+
+    physics        kinematic;
+    MOVE_DIRECTION direction;
 };
 
-#define $mario_tex  mario->mario_tex
-#define $mario_spr  mario->mario_spr
-#define $mario_kin  mario->mario_kinematic
-#define $mario_dir  mario->mario_direction
+#define $x_min      (mario_world_character).x_min
+#define $x_max      (mario_world_character).x_max
+#define $y_max      (mario_world_character).y_max
+
+#define $kinematic  (mario_world_character).kinematic
+#define $direction  (mario_world_character).direction
+
+bool mario_world_ctor               (mario_world *const mario_life);
+bool mario_world_simple_move        (mario_world *const mario_life, sf::Sprite *const mario_sprite);
+bool mario_world_reculc_acceleration(mario_world *const mario_life);
+
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool mario_ctor(mario_handler *const mario,
-                const char    *const mario_file,
-                const MOVE_DIRECTION mario_dir, const int    x_min      ,
-                                                const int    x_max      , const int    y_max      ,
-                                                const double x_size     , const double y_size     ,
+struct mario_handler
+{
+    sf::Texture mario_tex;
+    sf::Sprite  mario_spr;
+    mario_world mario_life;
+};
 
-                                                const double    x0      , const double    y0      ,
-                                                const double   vx0 = 0.0, const double   vy0 = 0.0,
-                                                const double   ax0 = 0.0, const double   ay0 = 0.0);
-
-bool mario_simple_move(mario_handler *const mario);
-bool mario_go_left    (mario_handler *const mario, const double mario_speed);
-bool mario_go_right   (mario_handler *const mario, const double mario_speed);
-bool mario_jump       (mario_handler *const mario, const double mario_speed);
-bool mario_stop       (mario_handler *const mario);
+#define $mario_tex  (mario_handler_exemplar).mario_tex
+#define $mario_spr  (mario_handler_exemplar).mario_spr
+#define $mario_life (mario_handler_exemplar).mario_life
 
 //================================================================================================================================
 // render_text
@@ -106,19 +109,6 @@ struct render_text
     sf::Text text;
 };
 
-#define $font txt->font
-#define $text txt->text
-
-//--------------------------------------------------------------------------------------------------------------------------------
-
-bool render_text_ctor(render_text *const txt, const char *const font_file,
-                                              const char *const message,
-
-                                              const double x_pos,
-                                              const double y_pos);
-
-bool render_text_upd_message(render_text *const txt, const char *const message);
-
 //================================================================================================================================
 // render_back
 //================================================================================================================================
@@ -129,34 +119,16 @@ struct render_back
     sf::Sprite  back_sprite;
 };
 
-#define $back_tex   back->back_texture
-#define $back_spr   back->back_sprite
-
-//--------------------------------------------------------------------------------------------------------------------------------
-
-bool render_back_ctor(render_back *const back, const char *const back_file,
-
-                                               const double x_size,
-                                               const double y_size);
-
 //================================================================================================================================
 // crack_video
 //================================================================================================================================
 
 struct crack_video
 {
-    sf::Music   music;
-
-    render_text   text;
-    render_back   back;
+    sf::Music     music;
+    render_text   rnd_text;
+    render_back   rnd_back;
     mario_handler hero;
 };
-
-#define $sound      crack->sound_track
-#define $hero       crack->hero
-
-//--------------------------------------------------------------------------------------------------------------------------------
-
-
 
 #endif //MOVIE_H
