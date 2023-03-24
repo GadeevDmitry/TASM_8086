@@ -42,7 +42,7 @@ bool get_file_to_crack(buffer *const bin_code, const int argc, const char *argv[
 
     if (argc != 2)
     {
-        fprintf(stderr, "You should give one parameter: file to crack\n");
+        My_printf_stderr("You should give one parameter: file to crack\n");
         return false;
     }
 
@@ -50,7 +50,7 @@ bool get_file_to_crack(buffer *const bin_code, const int argc, const char *argv[
 
     if (!is_correct_file_hash(bin_code))
     {
-        fprintf(stderr, "Invalid hash: you gave wrong file or file is damaged\n");
+        My_printf_stderr("Invalid hash: you gave wrong file or file is damaged\n");
 
         buffer_dtor(bin_code);
         return false;
@@ -104,7 +104,7 @@ void patch(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const 
         is_cracked_alredy = true;
         render_text_set_message(&(crack->rnd_text), "Error! (Check console)");
 
-        fprintf(stderr, "Can't write in \"%s\"\n", out_file);
+        My_printf_stderr("Can't write in \"%s\"\n", out_file);
         return;
     }
 

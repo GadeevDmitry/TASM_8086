@@ -5,8 +5,14 @@ ALG = ../../../lib_cpp/algorithm/algorithm
 
 LIB_H = $(LOG).h $(ALG).h
 LIB_O = $(LOG).o $(ALG).o
-#-----------------------------------------
 SFML = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
+#-----------------------------------------
 
-crack: crack.cpp movie.cpp movie.h $(LIB_H)
-	g++ $(CFLAGS) $(SFML) crack.cpp movie.cpp $(LIB_O) -o $@
+MY_PRINTF = ../my_printf/my_printf
+
+crack: crack.cpp movie.cpp movie.h $(MY_PRINTF).o $(LIB_H)
+	g++ $(CFLAGS) -no-pie $(SFML) crack.cpp movie.cpp $(MY_PRINTF).o $(LIB_O) -o $@
+
+
+$(MY_PRINTF).o: $(MY_PRINTF).s
+	nasm -f elf64 $< -l $(MY_PRINTF).lst
