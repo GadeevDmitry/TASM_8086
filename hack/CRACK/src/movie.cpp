@@ -145,6 +145,8 @@ bool mario_world_go_left(mario_world *const mario_life)
     log_verify(mario_life != nullptr, false);
 
     $vx = (-1) * USER_SPEED;
+    My_printf_stderr("mario: go left\n");
+
     return true;
 }
 
@@ -153,6 +155,8 @@ bool mario_world_go_right(mario_world *const mario_life)
     log_verify(mario_life != nullptr, false);
 
     $vx = USER_SPEED;
+    My_printf_stderr("mario: go right\n");
+
     return true;
 }
 
@@ -160,7 +164,13 @@ bool mario_world_jump(mario_world *const mario_life)
 {
     log_verify(mario_life != nullptr, false);
 
-    if ((int) $y + (int) $y_size >= $y_max) $vy = (-1) * USER_JUMP;
+    if ((int) $y + (int) $y_size >= $y_max)
+    {
+        $vy = (-1) * USER_JUMP;
+        My_printf_stderr("mario: jump\n");
+    }
+    else { My_printf_stderr("mario: can't jump in the air\n"); }
+
     return true;
 }
 
