@@ -1,6 +1,8 @@
 TEST/
 tst_*
 
+*.o
+*.lst
 *.html
 crack
 
