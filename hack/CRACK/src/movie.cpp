@@ -182,4 +182,69 @@ bool mario_handler_ctor(mario_handler *const mario)
     return mario_world_ctor(&$mario_life);
 }
 
+//================================================================================================================================
+// render_text
+//================================================================================================================================
+
+#define render_text_str (*str)
+
 //--------------------------------------------------------------------------------------------------------------------------------
+
+bool render_text_ctor(render_text *const str, const char *const     message,
+                                              const unsigned character_size,
+                                              const double x_pos,
+                                              const double y_pos)
+{
+    log_verify(str     != nullptr, false);
+    log_verify(message != nullptr, false);
+
+    if (!$msg_font.loadFromFile(FILE_FONT))
+    {
+        log_error("Can't load the font from file \"%s\"\n", FILE_FONT);
+        return false;
+    }
+
+    $msg_text.setFont         ($msg_font);
+    $msg_text.setFillColor    (sf::Color::White);
+
+    $msg_text.setText         (message);
+    $msg_text.setPosition     (x_pos, y_pos);
+    $msg_text.setCharacterSize(character_size);
+
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool render_text_set_message(render_text *const str, const char *const message)
+{
+    log_verify(str     != nullptr, false);
+    log_verify(message != nullptr, false);
+
+    $msg_text.setText(message);
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool render_text_progress_bar(render_text *const str, sf::RenderWindow *const wnd)
+{
+    log_verify(str != nullptr, false);
+    log_verify(wnd != nullptr, false);
+
+    char progress[100] = "In progress:..........";
+    char *bar_ptr      = progress + 12;
+
+    int cnt = 0;
+    do
+    {
+        $msg_text.setText(progress);
+
+        (*wnd).draw($msg_text);
+        (*wnd).display();
+
+        *bar_ptr = '#';
+        bar_ptr +=   1;
+        cnt++;
+    }
+    while (cnt < 10);
+}

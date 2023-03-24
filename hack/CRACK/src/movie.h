@@ -113,9 +113,20 @@ bool mario_handler_ctor(mario_handler *const mario);
 
 struct render_text
 {
-    sf::Font font;
-    sf::Text text;
+    sf::Font message_font;
+    sf::Text message_text;
 };
+
+#define $msg_font (render_text_str).message_font
+#define $msg_text (render_text_str).message_text
+
+bool render_text_ctor       (render_text *const str, const char *const     message,
+                                                     const unsigned character_size,
+                                                     const double x_pos,
+                                                     const double y_pos);
+
+bool render_text_set_message (render_text *const str,   const char *const message);
+bool render_text_progress_bar(render_text *const str, sf::RenderWindow *const wnd);
 
 //================================================================================================================================
 // render_back
