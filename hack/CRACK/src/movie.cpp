@@ -11,26 +11,26 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 
-#include "movie.h"
+#include "movie_static.h"
 
 //================================================================================================================================
 // CONST
 //================================================================================================================================
 
-const int      WND_X_SIZE =  1000;
-const int      WND_Y_SIZE =   600;
+const int WND_X_SIZE =  1000;
+const int WND_Y_SIZE =   600;
 
-const double MARIO_X_SIZE =  80.0;
-const double MARIO_Y_SIZE = 140.0;
+static const double MARIO_X_SIZE =  80.0;
+static const double MARIO_Y_SIZE = 140.0;
 
-const char *FILE_MUSIC    = "../data/8_bit_music.ogg";
-const char *FILE_FONT     = "../data/8_bit_font.ttf" ;
-const char *FILE_BACK     = "../data/8_bit_game.jpg" ;
-const char *FILE_MARIO    = "../data/mario.png";
+static const char *FILE_MUSIC    = "../data/8_bit_music.ogg";
+static const char *FILE_FONT     = "../data/8_bit_font.ttf" ;
+static const char *FILE_BACK     = "../data/8_bit_game.jpg" ;
+static const char *FILE_MARIO    = "../data/mario.png";
 
-const double          g =  0.0018; // ускорение свободного падения
-const double USER_SPEED =  0.5;    // скорость движения по горизонтали
-const double USER_JUMP  =  1.0;    // скорость сразу после прыжка
+static const double          g =  0.0018; // ускорение свободного падения
+static const double USER_SPEED =  0.5;    // скорость движения по горизонтали
+static const double USER_JUMP  =  1.0;    // скорость сразу после прыжка
 
 //================================================================================================================================
 // physics
@@ -40,10 +40,10 @@ const double USER_JUMP  =  1.0;    // скорость сразу после п�
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool physics_ctor(physics *const body,  const double x_size,
-                                        const double y_size, const double  x /* = 0 */, const double  y /* = 0 */,
-                                                             const double vx /* = 0 */, const double vy /* = 0 */,
-                                                             const double ax /* = 0 */, const double ay /* = 0 */)
+static bool physics_ctor(physics *const body,   const double x_size,
+                                                const double y_size, const double  x /* = 0 */, const double  y /* = 0 */,
+                                                                     const double vx /* = 0 */, const double vy /* = 0 */,
+                                                                     const double ax /* = 0 */, const double ay /* = 0 */)
 {
     log_assert(body != nullptr);
 
@@ -55,9 +55,9 @@ bool physics_ctor(physics *const body,  const double x_size,
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool physics_set_param(physics *const body, const double  x /* = 0 */, const double  y /* = 0 */,
-                                            const double vx /* = 0 */, const double vy /* = 0 */,
-                                            const double ax /* = 0 */, const double ay /* = 0 */)
+static bool physics_set_param(physics *const body, const double  x /* = 0 */, const double  y /* = 0 */,
+                                                   const double vx /* = 0 */, const double vy /* = 0 */,
+                                                   const double ax /* = 0 */, const double ay /* = 0 */)
 {
     log_assert(body != nullptr);
 
@@ -70,7 +70,7 @@ bool physics_set_param(physics *const body, const double  x /* = 0 */, const dou
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool physics_simple_move(physics *const body)
+static bool physics_simple_move(physics *const body)
 {
     log_assert(body != nullptr);
 
@@ -91,7 +91,7 @@ bool physics_simple_move(physics *const body)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool mario_world_ctor(mario_world *const mario_life)
+static bool mario_world_ctor(mario_world *const mario_life)
 {
     log_verify(mario_life != nullptr, false);
 
@@ -108,7 +108,7 @@ bool mario_world_ctor(mario_world *const mario_life)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool mario_world_simple_move(mario_world *const mario_life, sf::Sprite *const mario_sprite)
+static bool mario_world_simple_move(mario_world *const mario_life, sf::Sprite *const mario_sprite)
 {
     log_verify(mario_life   != nullptr, false);
     log_verify(mario_sprite != nullptr, false);
@@ -129,7 +129,7 @@ bool mario_world_simple_move(mario_world *const mario_life, sf::Sprite *const ma
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool mario_world_reculc_acceleration(mario_world *const mario_life)
+static bool mario_world_reculc_acceleration(mario_world *const mario_life)
 {
     log_verify(mario_life != nullptr, false);
 
@@ -142,7 +142,7 @@ bool mario_world_reculc_acceleration(mario_world *const mario_life)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool mario_world_go_left(mario_world *const mario_life)
+static bool mario_world_go_left(mario_world *const mario_life)
 {
     log_verify(mario_life != nullptr, false);
 
@@ -152,7 +152,7 @@ bool mario_world_go_left(mario_world *const mario_life)
     return true;
 }
 
-bool mario_world_go_right(mario_world *const mario_life)
+static bool mario_world_go_right(mario_world *const mario_life)
 {
     log_verify(mario_life != nullptr, false);
 
@@ -162,7 +162,7 @@ bool mario_world_go_right(mario_world *const mario_life)
     return true;
 }
 
-bool mario_world_jump(mario_world *const mario_life)
+static bool mario_world_jump(mario_world *const mario_life)
 {
     log_verify(mario_life != nullptr, false);
 
@@ -178,7 +178,7 @@ bool mario_world_jump(mario_world *const mario_life)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool mario_world_stop(mario_world *const mario_life)
+static bool mario_world_stop(mario_world *const mario_life)
 {
     log_verify(mario_life != nullptr, false);
 
@@ -199,7 +199,7 @@ bool mario_world_stop(mario_world *const mario_life)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool mario_handler_ctor(mario_handler *const mario, const char *const mario_file)
+static bool mario_handler_ctor(mario_handler *const mario, const char *const mario_file)
 {
     log_verify(mario      != nullptr, false);
     log_verify(mario_file != nullptr, false);
@@ -226,11 +226,11 @@ bool mario_handler_ctor(mario_handler *const mario, const char *const mario_file
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool render_text_ctor(render_text *const str, const char *const   font_file,
-                                              const char *const     message,
-                                              const unsigned character_size,
-                                              const double x_pos,
-                                              const double y_pos)
+static bool render_text_ctor(render_text *const str, const char *const   font_file,
+                                                     const char *const     message,
+                                                     const unsigned character_size,
+                                                     const double x_pos,
+                                                     const double y_pos)
 {
     log_verify(str       != nullptr, false);
     log_verify(font_file != nullptr, false);
@@ -271,7 +271,7 @@ bool render_text_set_message(render_text *const str, const char *const message)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool render_back_ctor(render_back *const ground, const char *const ground_file)
+static bool render_back_ctor(render_back *const ground, const char *const ground_file)
 {
     log_verify(ground      != nullptr, false);
     log_verify(ground_file != nullptr, false);
@@ -294,7 +294,7 @@ bool render_back_ctor(render_back *const ground, const char *const ground_file)
 // sf::Music
 //================================================================================================================================
 
-bool music_ctor(sf::Music *const music, const char *const music_file)
+static bool music_ctor(sf::Music *const music, const char *const music_file)
 {
     log_verify(music      != nullptr, false);
     log_verify(music_file != nullptr, false);
@@ -344,7 +344,7 @@ bool crack_video_ctor(crack_video *const crack, sf::RenderWindow *const wnd)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
-bool crack_video_redraw_frame(crack_video *const crack, sf::RenderWindow *const wnd)
+static bool crack_video_redraw_frame(crack_video *const crack, sf::RenderWindow *const wnd)
 {
     log_verify(crack != nullptr, false);
     log_verify(wnd   != nullptr, false);
