@@ -84,6 +84,8 @@ bool physics_simple_move(physics *const body)
 // mario_world
 //================================================================================================================================
 
+#undef physics_body
+
 #define mario_world_character (*mario_life)
 #define physics_body          ( $kinematic)
 
@@ -120,7 +122,7 @@ bool mario_world_simple_move(mario_world *const mario_life, sf::Sprite *const ma
     else if ((int) $x                 > $x_max) $x = $x_min - (int) $x_size;
     if      ((int) $y + (int) $y_size > $y_max) $y = $y_max - (int) $y_size;
 
-    (*mario_sprite).setPosition($x, $y);
+    (*mario_sprite).setPosition((float) $x, (float) $y);
 
     return mario_world_reculc_acceleration(mario_life);
 }
@@ -188,6 +190,9 @@ bool mario_world_stop(mario_world *const mario_life)
 // mario_handler
 //================================================================================================================================
 
+#undef physics_body
+#undef mario_world_character
+
 #define mario_handler_exemplar  (*mario)
 #define mario_world_caharacter  ($mario_life)
 #define physics_body            ($kinematic )
@@ -208,7 +213,7 @@ bool mario_handler_ctor(mario_handler *const mario, const char *const mario_file
     sf::Vector2u mario_initial_size = $mario_tex.getSize();
 
     $mario_spr.setTexture($mario_tex, true);
-    $mario_spr.setScale  (MARIO_X_SIZE / (double) mario_initial_size.x, MARIO_Y_SIZE / (double) mario_initial_size.y);
+    $mario_spr.setScale  ((float) MARIO_X_SIZE / (float) mario_initial_size.x, (float) MARIO_Y_SIZE / (float) mario_initial_size.y);
 
     return mario_world_ctor(&$mario_life);
 }
@@ -241,7 +246,7 @@ bool render_text_ctor(render_text *const str, const char *const   font_file,
     $msg_text.setFillColor    (sf::Color::White);
 
     $msg_text.setString       (message);
-    $msg_text.setPosition     (x_pos, y_pos);
+    $msg_text.setPosition     ((float) x_pos, (float) y_pos);
     $msg_text.setCharacterSize(character_size);
 
     return true;
@@ -280,7 +285,7 @@ bool render_back_ctor(render_back *const ground, const char *const ground_file)
     sf::Vector2u back_initial_size = $back_tex.getSize();
 
     $back_spr.setTexture($back_tex, true);
-    $back_spr.setScale  (WND_X_SIZE / (double) back_initial_size.x, WND_Y_SIZE / (double) back_initial_size.y);
+    $back_spr.setScale  ((float) WND_X_SIZE / (float) back_initial_size.x, (float) WND_Y_SIZE / (float) back_initial_size.y);
 
     return true;
 }
@@ -305,6 +310,10 @@ bool music_ctor(sf::Music *const music, const char *const music_file)
 //================================================================================================================================
 // crack_video
 //================================================================================================================================
+
+#undef background
+#undef render_text_str
+#undef mario_handler_exemplar
 
 #define video                   (*crack)
 #define render_text_str         $rnd_text

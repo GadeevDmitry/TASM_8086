@@ -21,7 +21,7 @@ int main(const int argc, const char *argv[])
     buffer bin_code = {};
     if (!get_file_to_crack(&bin_code, argc, argv)) return 0;
 
-    sf::RenderWindow main_wnd(sf::VideoMode(WND_X_SIZE, WND_Y_SIZE), "CRACK");
+    sf::RenderWindow main_wnd(sf::VideoMode((unsigned) WND_X_SIZE, (unsigned) WND_Y_SIZE), "CRACK");
     My_printf_stderr("WINDOW X SIZE: %d\n"
                      "WINDOW Y SIZE: %d\n", WND_X_SIZE, WND_Y_SIZE);
 
