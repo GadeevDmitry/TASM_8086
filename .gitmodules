@@ -1,3 +1,6 @@
 [submodule "lib_cpp"]
 	path = lib_cpp
 	url = https://github.com/GadeevDmitry/my_libraries.git
+[submodule "hack/CRACK/my_printf"]
+	path = hack/CRACK/my_printf
+	url = https://github.com/GadeevDmitry/printf_nasm64.git
