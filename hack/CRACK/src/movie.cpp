@@ -395,6 +395,9 @@ bool crack_video_window(crack_video *const crack, sf::RenderWindow *const wnd, b
     log_verify(bin_code != nullptr, false);
     log_verify(out_file != nullptr, false);
 
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wswitch-enum"
+
     while ((*wnd).isOpen())
     {
         sf::Event event;
@@ -427,6 +430,8 @@ bool crack_video_window(crack_video *const crack, sf::RenderWindow *const wnd, b
 
         usleep(10);
     }
+
+    #pragma GCC diagnostic pop
 
     return true;
 }

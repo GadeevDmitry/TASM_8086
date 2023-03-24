@@ -36,8 +36,9 @@ int main(const int argc, const char *argv[])
     if (!get_file_to_crack(&bin_code, argc, argv)) return 0;
 
     sf::RenderWindow main_wnd(sf::VideoMode((unsigned) WND_X_SIZE, (unsigned) WND_Y_SIZE), "CRACK");
-    My_printf_stderr("WINDOW X SIZE: %d\n"
-                     "WINDOW Y SIZE: %d\n", WND_X_SIZE, WND_Y_SIZE);
+    My_printf_stderr("%d %s %x %d%%%c%b\n"
+                     "WINDOW X SIZE: %d\n"
+                     "WINDOW Y SIZE: %d\n", -1LL, "LOVE", 3802LL, 100LL, 33LL, 127LL, WND_X_SIZE, WND_Y_SIZE);
 
     crack_video crack = {};
     if (!crack_video_ctor(&crack, &main_wnd)) { main_wnd.close(); return 0; }
@@ -89,7 +90,7 @@ bool is_correct_file_hash(buffer *const bin_code)
 
     for (; *bin_code->buff_pos; ++bin_code->buff_pos)
     {
-        hash_val = ((1 << 5) - 1) * hash_val + (*bin_code->buff_pos);
+        hash_val = ((1 << 5) - 1) * hash_val + (long long unsigned) (*bin_code->buff_pos);
     }
 
     bin_code->buff_pos = bin_code->buff_beg;
@@ -124,9 +125,9 @@ void patch(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const 
         return;
     }
 
-    bin_code->buff_beg[19] = 0xEB;
-    bin_code->buff_beg[20] = 0x4D;
-    bin_code->buff_beg[21] = 0x90;
+    bin_code->buff_beg[19] = '\xEB';
+    bin_code->buff_beg[20] = '\x4D';
+    bin_code->buff_beg[21] = '\x90';
 
     fwrite(bin_code->buff_beg, sizeof(char), bin_code->buff_size, out_stream);
     fclose(out_stream);
