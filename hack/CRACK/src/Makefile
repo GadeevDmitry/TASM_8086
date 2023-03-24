@@ -8,5 +8,5 @@ LIB_O = $(LOG).o $(ALG).o
 #-----------------------------------------
 SFML = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 
-crack: crack.cpp $(LIB_H)
-	g++ $(CFLAGS) $(SFML) $< $(LIB_O) -o $@
+crack: crack.cpp movie.cpp movie.h $(LIB_H)
+	g++ $(CFLAGS) $(SFML) crack.cpp movie.cpp $(LIB_O) -o $@

@@ -5,20 +5,8 @@
 // CONST
 //================================================================================================================================
 
-const int      WND_X_SIZE =  1000;
-const int      WND_Y_SIZE =   600;
-
-const double MARIO_X_SIZE =  80.0;
-const double MARIO_Y_SIZE = 140.0;
-
-const char *FILE_MUSIC    = "../data/8_bit_music.ogg";
-const char *FILE_FONT     = "../data/8_bit_font.ttf" ;
-const char *FILE_GAME     = "../data/8_bit_game.jpg" ;
-const char *FILE_MARIO    = "../data/mario.png";
-
-const double          g =  9.8; // ускорение свободного падения
-const double USER_SPEED =  5.0; // скорость движения по горизонтали
-const double USER_JUMP  = 10.0; // скорость сразу после прыжка
+extern const int WND_X_SIZE;
+extern const int WND_Y_SIZE;
 
 //================================================================================================================================
 // physiscs
@@ -105,7 +93,7 @@ struct mario_handler
 #define $mario_spr  (mario_handler_exemplar).mario_spr
 #define $mario_life (mario_handler_exemplar).mario_life
 
-bool mario_handler_ctor(mario_handler *const mario);
+bool mario_handler_ctor(mario_handler *const mario, const char *const mario_file);
 
 //================================================================================================================================
 // render_text
@@ -120,7 +108,8 @@ struct render_text
 #define $msg_font (render_text_str).message_font
 #define $msg_text (render_text_str).message_text
 
-bool render_text_ctor       (render_text *const str, const char *const     message,
+bool render_text_ctor       (render_text *const str, const char *const   font_file,
+                                                     const char *const     message,
                                                      const unsigned character_size,
                                                      const double x_pos,
                                                      const double y_pos);
@@ -138,6 +127,17 @@ struct render_back
     sf::Sprite  back_sprite;
 };
 
+#define $back_tex (background).back_texture
+#define $back_spr (background).back_sprite
+
+bool render_back_ctor(render_back *const ground, const char *const ground_file);
+
+//================================================================================================================================
+// sf::Music
+//================================================================================================================================
+
+bool music_ctor(sf::Music *const music, const char *const music_file);
+
 //================================================================================================================================
 // crack_video
 //================================================================================================================================
@@ -149,5 +149,33 @@ struct crack_video
     render_back   rnd_back;
     mario_handler hero;
 };
+
+#define $music      (video).music
+#define $rnd_text   (video).rnd_text
+#define $rnd_back   (video).rnd_back
+#define $hero       (video).hero
+
+bool crack_video_ctor  (crack_video *const crack, sf::RenderWindow *const wnd);
+bool crack_video_window(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const bin_code, const char *const out_file);
+
+//================================================================================================================================
+// MAIN
+//================================================================================================================================
+
+//--------------------------------------------------------------------------------------------------------------------------------
+// verify
+//--------------------------------------------------------------------------------------------------------------------------------
+
+const unsigned long long CORRECT_HASH_VAL  = 0xFFFFFFFFFFFFFD1D;
+const size_t             CORRECT_FILE_SIZE = 236;
+
+bool get_file_to_crack   (buffer *const bin_code, const int argc, const char *argv[]);
+bool is_correct_file_hash(buffer *const bin_code);
+
+//--------------------------------------------------------------------------------------------------------------------------------
+// patch
+//--------------------------------------------------------------------------------------------------------------------------------
+
+void patch(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const bin_code, const char *const out_file);
 
 #endif //MOVIE_H
