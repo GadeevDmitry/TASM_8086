@@ -117,6 +117,6 @@ void patch(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const 
 
     is_cracked_alredy = true;
 
-    render_text_progress_bar(&(crack->rnd_text), wnd);
+    crack_video_progress_bar(crack, wnd);
     render_text_set_message (&(crack->rnd_text), "Cracking finished!");
 }

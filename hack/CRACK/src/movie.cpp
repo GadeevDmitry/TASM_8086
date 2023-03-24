@@ -28,9 +28,9 @@ const char *FILE_FONT     = "../data/8_bit_font.ttf" ;
 const char *FILE_BACK     = "../data/8_bit_game.jpg" ;
 const char *FILE_MARIO    = "../data/mario.png";
 
-const double          g =  9.8; // ускорение свободного падения
-const double USER_SPEED =  5.0; // скорость движения по горизонтали
-const double USER_JUMP  = 10.0; // скорость сразу после прыжка
+const double          g =  0.0018; // ускорение свободного падения
+const double USER_SPEED =  0.5;    // скорость движения по горизонтали
+const double USER_JUMP  =  1.0;    // скорость сразу после прыжка
 
 //================================================================================================================================
 // physics
@@ -111,8 +111,8 @@ bool mario_world_simple_move(mario_world *const mario_life, sf::Sprite *const ma
     log_verify(mario_life   != nullptr, false);
     log_verify(mario_sprite != nullptr, false);
 
-    if      ($direction == MOVE_LEFT  && $vx > 0) { (*mario_sprite).setScale(-1.0, 1.0); $direction = MOVE_RIGHT; }
-    else if ($direction == MOVE_RIGHT && $vx < 0) { (*mario_sprite).setScale(-1.0, 1.0); $direction = MOVE_LEFT;  }
+    if      ($direction == MOVE_LEFT  && $vx > 0) { (*mario_sprite).scale(-1.0, 1.0); $direction = MOVE_RIGHT; }
+    else if ($direction == MOVE_RIGHT && $vx < 0) { (*mario_sprite).scale(-1.0, 1.0); $direction = MOVE_LEFT;  }
 
     if (!physics_simple_move(&$kinematic)) return false;
 
@@ -248,35 +248,6 @@ bool render_text_set_message(render_text *const str, const char *const message)
     return true;
 }
 
-//--------------------------------------------------------------------------------------------------------------------------------
-
-bool render_text_progress_bar(render_text *const str, sf::RenderWindow *const wnd)
-{
-    log_verify(str != nullptr, false);
-    log_verify(wnd != nullptr, false);
-
-    char progress[100] = "In progress:..........";
-    char *bar_ptr      = progress + 12;
-
-    int cnt = 0;
-    do
-    {
-        $msg_text.setString(progress);
-
-        (*wnd).draw($msg_text);
-        (*wnd).display();
-
-        *bar_ptr = '#';
-        bar_ptr +=   1;
-        cnt++;
-
-        usleep(100);
-    }
-    while (cnt < 10);
-
-    return true;
-}
-
 //================================================================================================================================
 // render_back
 //================================================================================================================================
@@ -354,6 +325,50 @@ bool crack_video_ctor(crack_video *const crack, sf::RenderWindow *const wnd)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 
+bool crack_video_redraw_frame(crack_video *const crack, sf::RenderWindow *const wnd)
+{
+    log_verify(crack != nullptr, false);
+    log_verify(wnd   != nullptr, false);
+
+    (*wnd).clear  ();
+    (*wnd).draw   ($back_spr);
+    (*wnd).draw   ($mario_spr);
+    (*wnd).draw   ($msg_text);
+    (*wnd).display();
+
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
+bool crack_video_progress_bar(crack_video *const crack, sf::RenderWindow *const wnd)
+{
+    log_verify(crack != nullptr, false);
+    log_verify(wnd   != nullptr, false);
+
+    char progress[100] = "In progress  .......... ";
+    char *bar_ptr      = progress + 12;
+
+    int cnt = 0;
+    do
+    {
+        $msg_text.setString(progress);
+
+        crack_video_redraw_frame(crack, wnd);
+
+        *bar_ptr = '-';
+        bar_ptr +=   1;
+        cnt++;
+
+        usleep(1000000);
+    }
+    while (cnt <= 10);
+
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+
 bool crack_video_window(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const bin_code, const char *const out_file)
 {
     log_verify(crack    != nullptr, false);
@@ -364,7 +379,7 @@ bool crack_video_window(crack_video *const crack, sf::RenderWindow *const wnd, b
     while ((*wnd).isOpen())
     {
         sf::Event event;
-        while ((*wnd).pollEvent(event))
+        if ((*wnd).pollEvent(event))
         {
             if (event.type == sf::Event::Closed    ) { (*wnd).close(); buffer_dtor(bin_code); return true; }
             if (event.type == sf::Event::KeyPressed)
@@ -387,17 +402,11 @@ bool crack_video_window(crack_video *const crack, sf::RenderWindow *const wnd, b
                     default:                break;
                 }
             }
-
-            mario_world_simple_move(&$mario_life, &$mario_spr);
-
-            (*wnd).clear  ();
-            (*wnd).draw   ($back_spr);
-            (*wnd).draw   ($mario_spr);
-            (*wnd).draw   ($msg_text);
-            (*wnd).display();
-
-            usleep(10);
         }
+        mario_world_simple_move(&$mario_life, &$mario_spr);
+        crack_video_redraw_frame(crack, wnd);
+
+        usleep(10);
     }
 
     return true;

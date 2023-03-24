@@ -115,7 +115,6 @@ bool render_text_ctor       (render_text *const str, const char *const   font_fi
                                                      const double y_pos);
 
 bool render_text_set_message (render_text *const str,   const char *const message);
-bool render_text_progress_bar(render_text *const str, sf::RenderWindow *const wnd);
 
 //================================================================================================================================
 // render_back
@@ -155,8 +154,10 @@ struct crack_video
 #define $rnd_back   (video).rnd_back
 #define $hero       (video).hero
 
-bool crack_video_ctor  (crack_video *const crack, sf::RenderWindow *const wnd);
-bool crack_video_window(crack_video *const crack, sf::RenderWindow *const wnd, buffer *const bin_code, const char *const out_file);
+bool crack_video_ctor        (crack_video *const crack, sf::RenderWindow *const wnd);
+bool crack_video_redraw_frame(crack_video *const crack, sf::RenderWindow *const wnd);
+bool crack_video_progress_bar(crack_video *const crack, sf::RenderWindow *const wnd);
+bool crack_video_window      (crack_video *const crack, sf::RenderWindow *const wnd, buffer *const bin_code, const char *const out_file);
 
 //================================================================================================================================
 // MAIN
